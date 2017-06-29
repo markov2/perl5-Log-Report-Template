@@ -36,6 +36,10 @@ isa_ok $first, 'Log::Report::Template::Textdomain';
 is $first->function, 'loc', 'default function';
 ok $first->expectedIn($incl), 'expectedIn';
 
+my $f2 = textdomain 'first';
+ok defined $f2, 'recover domain';
+is $first, $f2;
+
 #dispatcher close => 'default';
 
 eval { $templater->addTextdomain(name => 'first') };

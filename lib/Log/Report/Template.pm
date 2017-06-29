@@ -23,18 +23,24 @@ Log::Report::Template - template toolkit with translations
 
   use Log::Report::Template;
   my $templater = Log::Report::Template->new(%config);
+  $templater->addTextdomain(...);
   $templater->process('template_file.tt', \%vars);
 
 =chapter DESCRIPTION
 
-This module extends M<Template>, which is the core of Template
-Toolkit.  The main addition is support for translations via the
-translation framework offered by M<Log::Report>.
+This module extends M<Template>, which is the core of Template Toolkit.
+The main addition is support for translations via the translation
+framework offered by M<Log::Report>.
 
 You add translations to a template system, by adding calls to some
-translation function (in this case called 'loc()').  This function
-performs dark magic to collect the translation from translation tables.
+translation function (by default called 'loc()') to your template text.
+That function will perform dark magic to collect the translation from
+translation tables, and fill in values.  For instance:
 
+  <div>Price: [% price %]</div>          # no translation
+  <div>[% loc("Price: {price}") %]</div> # translation optional
+
+It's quite a lot of work to make your templates translatable.
 Please read the L</DETAILS> section before you start using this module.
 
 =chapter METHODS
@@ -77,41 +83,41 @@ sub new
 sub _init($)
 {   my ($self, $args) = @_;
 
-	# Add a filter object we can dynamically add new filters to
+    # Add a filter object we can dynamically add new filters to
     my $filters = $self->{LRT_filters} = {};
 
-	push @{$args->{LOAD_FILTERS}}
+    push @{$args->{LOAD_FILTERS}}
       , Template::Filters->new({ FILTERS => $filters });
 
     $self->SUPER::_init($args);
 
-	my $delim = $self->{LRT_delim} = $args->{DELIMITER} || ':';
-	my $incl = $args->{INCLUDE_PATH} || [];
+    my $delim = $self->{LRT_delim} = $args->{DELIMITER} || ':';
+    my $incl = $args->{INCLUDE_PATH} || [];
     $self->{LRT_path} = ref $incl eq 'ARRAY' ? $incl : [ split $delim, $incl ];
 
-	$self->{LRT_dom_by_func} = {};
+    $self->{LRT_dom_by_func} = {};
 
-	my $handle_errors = $args->{processing_errors} || 'NATIVE';
-	if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
+    my $handle_errors = $args->{processing_errors} || 'NATIVE';
+    if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
     elsif($handle_errors ne 'NATIVE')
     {   error __x"illegal value '{value}' for 'processing_errors' option"
           , value => $handle_errors;
     }
 
-	$self->{LRT_formatter} = $self->_createFormatter($args);
+    $self->{LRT_formatter} = $self->_createFormatter($args);
     $self->_defaultFilters;
-	$self;
+    $self;
 }
 
 sub _createFormatter($)
 {   my ($self, $args) = @_;
-	my $formatter = $args->{formatter};
+    my $formatter = $args->{formatter};
     return $formatter if ref $formatter eq 'CODE';
 
-	my $syntax = $args->{template_syntax} || 'HTML';
+    my $syntax = $args->{template_syntax} || 'HTML';
     my $modifiers = $self->_collectModifiers($args);
 
-	my $sp     = String::Print->new
+    my $sp     = String::Print->new
       ( encode_for => ($syntax eq 'HTML' ? $syntax : undef) 
       , modifiers  => $modifiers
       );
@@ -120,9 +126,10 @@ sub _createFormatter($)
 }
 
 #---------------
-=section Accessors
+=section Attributes
 
 =method formatter
+Get the C<String::Print> object which formats the messages.
 =cut
 
 sub formatter() { shift->{LRT_formatter} }
@@ -132,7 +139,7 @@ sub formatter() { shift->{LRT_formatter} }
 
 =method addTextdomain %options
 Create a new M<Log::Report::Template::Textdomain> object.
-See its new method for the options.
+See its C<new()> method for the options.
 
 Additional facts about the options: you may specify C<only_in_directory>
 as a path. Those directories must be in the INCLUDE_PATH as well.
@@ -141,12 +148,12 @@ The (domain) C<name> must be unique, and the C<function> not yet in use.
 =cut
 
 sub addTextdomain($%) {
-	my ($self, %args) = @_;
+    my ($self, %args) = @_;
 
-	if(my $only = $args{only_in_directory})
+    if(my $only = $args{only_in_directory})
     {   my $delim = $self->{LRT_delim};
         $only     = $args{only_in_directory} = [ split $delim, $only ]
-			if ref $only ne 'ARRAY';
+    		if ref $only ne 'ARRAY';
 
         my @incl  = $self->_incl_path;
         foreach my $dir (@$only)
@@ -156,58 +163,60 @@ sub addTextdomain($%) {
         }
     }
 
-	my $name    = $args{name};
-	! textdomain $name, 'EXISTS'
+    my $name    = $args{name};
+    ! textdomain $name, 'EXISTS'
         or error __x"textdomain '{name}' already exists", name => $name;
 
-	my $lexicon = delete $args{lexicon} || delete $args{lexicons}
-		or error __x"textdomain '{name}' does not specify the lexicon directory"
+    my $lexicon = delete $args{lexicon} || delete $args{lexicons}
+    	or error __x"textdomain '{name}' does not specify the lexicon directory"
             , name => $name;
 
-	if(ref $lexicon eq 'ARRAY')
-	{   @$lexicon < 2
+    if(ref $lexicon eq 'ARRAY')
+    {   @$lexicon < 2
         or error __x"textdomain '{name}' has more than one lexicon directory"
             , name => $name;
 
         $lexicon = $lexicon->[0]
-		or error __x"textdomain '{name}' does not specify the lexicon directory"
+    	or error __x"textdomain '{name}' does not specify the lexicon directory"
             , name => $name;
     }
 
-	-d $lexicon
+    -d $lexicon
         or error __x"lexicon directory {dir} for textdomain '{name}' does not exist"
            , dir => $lexicon, name => $name;
-	$args{lexicon} = $lexicon;
+    $args{lexicon} = $lexicon;
 
-	my $domain  = Log::Report::Template::Textdomain->new(%args);
-	textdomain $domain;
+    my $domain  = Log::Report::Template::Textdomain->new(%args);
+    textdomain $domain;
 
-	my $func    = $domain->function;
-	if(my $other = $self->_domainByFunction($func))
+    my $func    = $domain->function;
+    if(my $other = $self->_domainByFunction($func))
     {   error __x"translation function '{func}' already in use by textdomain '{name}'"
           , func => $func, name => $other->name;
-	}
+    }
+    $self->{LRT_domains}{$name}     = $domain;
     $self->{LRT_dom_by_func}{$func} = $domain;
 
     # call as function or as filter
     $self->_stash->{$func}   = $domain->translationFunction($self->service);
     $self->_filters->{$func} = [ $domain->translationFilter, 1 ];
-	$domain;
+    $domain;
 }
 
 # _domainByFunction($function_name)
 # Which textdomain is being used is determined by the translation function
 # that is called: it's a unique relationship.
 
-sub _domains()   { values %{$_[0]->{LRT_dom_by_func} } }
 sub _domainByFunction($) { $_[0]->{LRT_dom_by_func}{$_[1]} }
 sub _incl_path() { @{shift->{LRT_path}} }
 sub _filters()   { shift->{LRT_filters} }
 sub _stash()     { shift->service->context->stash }
+sub _domains()   { values %{$_[0]->{LRT_domains} } }
 
 
 =method extract %options
 Extract message ids from the templates, and register them to the lexicon.
+Read section L</"Extracting PO-files"> how to use this method.
 
 =option  charset CHARSET
 =default charset 'UTF-8'
@@ -237,34 +246,34 @@ sub extract(%)
 {   my ($self, %args) = @_;
 
     eval "require Log::Report::Extract::Template";
-	panic $@ if $@;
+    panic $@ if $@;
 
-	my $stats   = $args{show_stats} || 0;
-	my $charset = $args{charset}    || 'UTF-8';
-	my $write   = exists $args{write_tables} ? $args{write_tables} : 1;
+    my $stats   = $args{show_stats} || 0;
+    my $charset = $args{charset}    || 'UTF-8';
+    my $write   = exists $args{write_tables} ? $args{write_tables} : 1;
 
-	my @filenames;
-	if(my $fns  = $args{filenames} || $args{filename})
+    my @filenames;
+    if(my $fns  = $args{filenames} || $args{filename})
     {   push @filenames, ref $fns eq 'ARRAY' ? @$fns : $fns;
-	}
-	else
-	{   my $match = $args{filename_match} || qr/\.tt2?$/;
+    }
+    else
+    {   my $match = $args{filename_match} || qr/\.tt2?$/;
         my $filter = sub {
             my $name = $File::Find::name;
            push @filenames, $name if -f $name && $name =~ $match;
         };
-		foreach my $dir ($self->_incl_path)
+    	foreach my $dir ($self->_incl_path)
         {   trace "scan $dir for template files";
             find { wanted => sub { $filter->($File::Find::name) }
                  , no_chdir => 1}, $dir;
-		}
+    	}
     }
 
-	foreach my $domain ($self->_domains)
+    foreach my $domain ($self->_domains)
     {   my $function = $domain->function;
-		my $name     = $domain->name;
+    	my $name     = $domain->name;
 
-		trace "extracting msgids for '$function' from domain '$name'";
+    	trace "extracting msgids for '$function' from domain '$name'";
 
         my $extr = Log::Report::Extract::Template->new
           ( lexicon => $domain->lexicon
@@ -273,11 +282,11 @@ sub extract(%)
           , charset => $charset
           );
 
-		$extr->process($_) for @filenames;
+    	$extr->process($_) for @filenames;
 
-		$extr->showStats if $stats;
-		$extr->write     if $write;
-	}
+    	$extr->showStats if $stats;
+    	$extr->write     if $write;
+    }
 }
 
 #------------
@@ -340,19 +349,19 @@ sub _cols_factory(@)
 {   my $self = shift;
     my $params = ref $_[-1] eq 'HASH' ? pop : undef;
     my @blocks = @_ ? @_ : 'td';
-	if(@blocks==1 && $blocks[0] =~ /\$[1-9]/)
+    if(@blocks==1 && $blocks[0] =~ /\$[1-9]/)
     {   my $pattern = shift @blocks;
         return sub {   # second syntax
-		    my @cols = split /\t/, $_[0];
-		    $pattern =~ s/\$([0-9]+)/$cols[$1-1] || ''/ger;
+    	    my @cols = split /\t/, $_[0];
+    	    $pattern =~ s/\$([0-9]+)/$cols[$1-1] || ''/ger;
         }
     }
 
     sub {   # first syntax
-		my @cols = split /\t/, $_[0];
-		my @wrap = @blocks;
-		my @out;
-		while(@cols)
+    	my @cols = split /\t/, $_[0];
+    	my @wrap = @blocks;
+    	my @out;
+    	while(@cols)
         {   push @out, "<$wrap[0]>$cols[0]</$wrap[0]>";
             shift @cols;
             shift @wrap if @wrap > 1;
@@ -470,13 +479,13 @@ string will take its place.
 sub _collectModifiers($)
 {   my ($self, $args) = @_;
 
-	# First match will be used
+    # First match will be used
     my @modifiers = @{$args->{modifiers} || []};
 
     # More default extensions expected here.  String::Print already
     # adds a bunch.
 
-	\@modifiers;
+    \@modifiers;
 }
 
 #------------
@@ -626,6 +635,110 @@ by using tags which end on 'html':
 
   [% SET title_html = html(title) %]
   [% loc("Title> {title_html}") %]
+
+
+=section Extracting PO-files
+
+You may define a textdomain without doing any translations (yet)  However,
+when you start translating, you will need to maintain translation tables
+which are in PO-format.  PO-files can be maintained with a wide variety
+of tools, for instance poedit, Pootle, virtaal, GTranslator, Lokalize,
+or Webtranslateit.
+
+=subsection Setting-up translations
+
+Start with desiging a domain structure.  Probably, you want to create
+a separate domain for the templates (external texts in many languages)
+and your Perl program (internal texts with few languages).
+
+Pick a lexicon directory, which is also inside your version control setup,
+for instance your GIT repository.  Some po-editors can work together
+with various version control systems.
+
+Now, start using this module.  There are two ways: either by creating it
+as object, or by extension.
+
+  ### As object
+  # Somewhere in your code
+  use Log::Report::Template;
+  my $templater = Log::Report::Template->new(%config);
+  $templater->addTextdomain(...);
+
+  $templater->process('template_file.tt', \%vars); # runtime
+  $templater->extract(...);    # rarely, "off-line"
+
+Some way or another, you want to be able to share the creation of the
+templater and configuration of the textdomain between the run-time use
+and the irregular (off-line) extraction of msgids.
+
+The alternative is via extension:
+
+  ### By extension
+  # Somewhere in your code:
+  use My::Template;
+  my $templater = My::Template->new;
+  $templater->process('template_file.tt', \%vars);
+  
+  # File lib/My/Template.pm
+  package My::Template;
+  use parent 'Log::Report::Template';
+
+  sub init($) {
+     my ($self, $args) = @_;
+     # add %config into %$args
+     $self->SUPER::init($args);
+     $self->addTextdomain(...);
+     $self;
+  }
+
+  1;
+
+The second solution requires a little bit of experience with OO, but is
+easier to maintain and to share.
+
+=subsection adding a new language
+
+The first time you run M<extract()>, you will see a file being created
+in C<$lexicon/$textdomain-$charset.po>.  That file will be left empty:
+copy it to start a new translation.
+
+There are many ways to structure PO-files.  Which structure used, is
+detected automatically by M<Log::Report::Lexicon>.  My personal preference 
+is C<$lexicon/$textdomain/$language-$charset.po>.  On Unix-like systems,
+you would do:
+
+  # Start a new language
+  mkdir mylexicon/mydomain
+  cp mylexicon/mydomain-utf8.po mylexicon/mydomain/nl_NL-utf8.po 
+  
+  # fill the nl_NL-utf8.po file with the translation
+  poedit mylexicon/mydomain/nl_NL-utf8.po
+  
+  # add the file to your version control system
+  git add mylexicon/mydomain/nl_NL-utf8.po
+  
+
+Now, when your program sets the locale to 'nl-NL', it should start
+translating to Dutch.  If it doesn't, it is not always easy to
+figure-out what is wrong...
+
+=subsection Keeping translations up to date
+
+You have to call M<extract()> when msgids have changed or added,
+to have the PO-tables updated.  The language specific tables will
+get updated automatically... look for msgids which are 'fuzzy'
+(need update)
+
+You may also use the external program C<xgettext-perl>, which is
+shipped with the M<Log::Report::Lexicon> distribution.
+
+=subsection More performance via MO-files
+
+PO-files are quite large.  You can reduce the translation table size by
+creating a binary "MO"-file for each of them. M<Log::Report::Lexicon>
+will prefer mo files, if it encounters them, but generation is not (yet)
+organized via Log::Report components.  Search for "msgfmt" as separate
+tool or CPAN module.
 
 =cut
 

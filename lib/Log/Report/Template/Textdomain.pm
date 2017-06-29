@@ -46,19 +46,19 @@ sub init($)
 {   my ($self, $args) = @_;
     $self->SUPER::init($args);
 
-	if(my $only =  $args->{only_in_directory})
+    if(my $only =  $args->{only_in_directory})
     {   my @only = ref $only eq 'ARRAY' ? @$only : $only;
-		my $dirs = join '|', map "\Q$_\E", @only;
+    	my $dirs = join '|', map "\Q$_\E", @only;
         $self->{LRTT_only_in} = qr!^(?:$dirs)(?:$|/)!;
     }
 
-	$self->{LRTT_function} = $args->{translation_function} || 'loc';
-	my $lexicon = $self->{LRTT_lexicon}  = $args->{lexicon};
+    $self->{LRTT_function} = $args->{translation_function} || 'loc';
+    my $lexicon = $self->{LRTT_lexicon}  = $args->{lexicon};
     $self;
 }
 
 #----------------
-=section Accessors
+=section Attributes
 
 =method function
 Returns the name of the function which is used for translations.
@@ -107,7 +107,7 @@ my $lang = 'NL';
 
 sub translationFilter()
 {	my $self   = shift;
-	my $domain = $self->name;
+    my $domain = $self->name;
 my $lang = 'NL';
 
     # Prepare as much and fast as possible, because it gets called often!
@@ -116,7 +116,7 @@ my $lang = 'NL';
     # sub which does the real work.
     sub {
         my $context = shift;
-		my $pairs   = pop if @_ && ref $_[-1] eq 'HASH';
+    	my $pairs   = pop if @_ && ref $_[-1] eq 'HASH';
         sub { # called with $msgid (template container content) only, the
               # parameters are caught when the factory produces this sub.
              $pairs->{_stash} = $context->{STASH};
@@ -133,7 +133,7 @@ sub _reportMissingKey($$)
     # of TT over plain Perl: we have access to the variable namespace.
 
     my $stash = $args->{_stash};
-	if($stash)
+    if($stash)
     {   my $value = $stash->get($key);
         return $value if defined $value && length $value;
     }

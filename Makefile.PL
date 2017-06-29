@@ -2,12 +2,13 @@ use ExtUtils::MakeMaker;
 
 use 5.010;
 
-my $version = '0.10';
+my $version = '0.11';
 
 my %prereq  =
   ( Test::More               => 0.86
   , Scalar::Util             => 0
   , Log::Report              => 1.20
+  , Log::Report::Lexicon     => 1.08
   , Template                 => 2.26
   , String::Print            => 0.91
   , File::Find               => 0

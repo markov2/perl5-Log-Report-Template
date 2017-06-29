@@ -3,5 +3,13 @@
 Unless noted otherwise, these changes where initiated and applied by
 Mark Overmeer.
 
+version 0.11: Thu 29 Jun 14:48:16 CEST 2017
+
+	Fixes:
+	- dependency on Log::Report::Lexicon
+
+	Improvements:
+	- more documentation about the application
+
 version 0.10: Tue 27 Jun 16:45:08 CEST 2017
 	- initial release
