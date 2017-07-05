@@ -3,6 +3,12 @@
 Unless noted otherwise, these changes where initiated and applied by
 Mark Overmeer.
 
+version 0.12: Wed  5 Jul 09:38:59 CEST 2017
+
+	Improvements:
+	- support older perls by avoiding s///r
+	- example with chained IF
+
 version 0.11: Thu 29 Jun 14:48:16 CEST 2017
 
 	Fixes:

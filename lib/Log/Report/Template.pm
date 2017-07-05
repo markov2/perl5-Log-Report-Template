@@ -23,7 +23,7 @@ Log::Report::Template - template toolkit with translations
 
   use Log::Report::Template;
   my $templater = Log::Report::Template->new(%config);
-  $templater->addTextdomain(...);
+  $templater->addTextdomain(name => "Tic", lexicon => ...);
   $templater->process('template_file.tt', \%vars);
 
 =chapter DESCRIPTION
@@ -95,8 +95,6 @@ sub _init($)
     my $incl = $args->{INCLUDE_PATH} || [];
     $self->{LRT_path} = ref $incl eq 'ARRAY' ? $incl : [ split $delim, $incl ];
 
-    $self->{LRT_dom_by_func} = {};
-
     my $handle_errors = $args->{processing_errors} || 'NATIVE';
     if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
     elsif($handle_errors ne 'NATIVE')
@@ -145,6 +143,13 @@ Additional facts about the options: you may specify C<only_in_directory>
 as a path. Those directories must be in the INCLUDE_PATH as well.
 The (domain) C<name> must be unique, and the C<function> not yet in use.
 
+=example
+  my $domain = $templater->addTextdomain(
+    name     => 'my-project',
+    function => 'loc',   # default
+    lexicon  => $dir,    # location of translation tables
+  );
+
 =cut
 
 sub addTextdomain($%) {
@@ -190,12 +195,11 @@ sub addTextdomain($%) {
     textdomain $domain;
 
     my $func    = $domain->function;
-    if(my $other = $self->_domainByFunction($func))
+    if((my $other) = grep $func eq $_->function, $self->_domains)
     {   error __x"translation function '{func}' already in use by textdomain '{name}'"
           , func => $func, name => $other->name;
     }
     $self->{LRT_domains}{$name}     = $domain;
-    $self->{LRT_dom_by_func}{$func} = $domain;
 
     # call as function or as filter
     $self->_stash->{$func}   = $domain->translationFunction($self->service);
@@ -203,11 +207,6 @@ sub addTextdomain($%) {
     $domain;
 }
 
-# _domainByFunction($function_name)
-# Which textdomain is being used is determined by the translation function
-# that is called: it's a unique relationship.
-
-sub _domainByFunction($) { $_[0]->{LRT_dom_by_func}{$_[1]} }
 sub _incl_path() { @{shift->{LRT_path}} }
 sub _filters()   { shift->{LRT_filters} }
 sub _stash()     { shift->service->context->stash }
@@ -353,7 +352,8 @@ sub _cols_factory(@)
     {   my $pattern = shift @blocks;
         return sub {   # second syntax
     	    my @cols = split /\t/, $_[0];
-    	    $pattern =~ s/\$([0-9]+)/$cols[$1-1] || ''/ger;
+    	    $pattern =~ s/\$([0-9]+)/$cols[$1-1] || ''/ge;
+			$pattern;
         }
     }
 
@@ -608,6 +608,20 @@ we can access.  Therefore, we can lookup "accidentally" missed parameters.
   [% loc("Hi {name}", name => name) %]  # looks silly
   [% loc("Hi {name}") %]                # uses TT stash directly
 
+
+Sometimes, computation of objects is expensive: you never know.  So, you
+may try to avoid repeated computation.  In the follow example, "soldOn"
+is collected/computed twice:
+
+  [% IF product.soldOn %]
+  <td>[% loc("Sold on {product.soldOn DATE}")</td>
+  [% END %]
+
+The performance is predictable optimal with:
+
+  [% sold_on = product.soldOn; IF sold_on %]
+  <td>[% loc("Sold on {sold_on DATE}")</td>
+  [% END %]
 
 =subsection Translation into HTML
 
