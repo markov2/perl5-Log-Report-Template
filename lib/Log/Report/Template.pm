@@ -1,8 +1,12 @@
-use warnings;
-use strict;
+# This code is part of distribution Log-Report-Template. Meta-POD processed
+# with OODoc into POD and HTML manual-pages.  See README.md
+# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
 package Log::Report::Template;
 use base 'Template';
+
+use warnings;
+use strict;
 
 use Log::Report 'log-report-template';
 use Log::Report::Template::Textdomain ();
