@@ -19,9 +19,9 @@ WriteMakefile
   , VERSION   => $version
   , PREREQ_PM => \%prereq
 
-  , AUTHOR    => 'Mark Overmeer'
+  , AUTHOR    => 'Mark Overmeer <markov@cpan.org>'
   , ABSTRACT  => 'template toolkit with translations'
-  , LICENSE   => 'perl'
+  , LICENSE   => 'perl_5'
 
   , META_MERGE =>
       { 'meta-spec' => { version => 2 }
@@ -31,9 +31,9 @@ WriteMakefile
             , url  => 'https://github.com/markov2/perl5-Log-Report-Template.git'
             , web  => 'https://github.com/markov2/perl5-Log-Report-Template'
             }
+         , homepage => 'http://perl.overmeer.net/CPAN/'
+         , license  => [ 'http://dev.perl.org/licenses/' ]
          }
-      , homepage => 'http://perl.overmeer.net/CPAN/'
-      , license  => [ 'http://dev.perl.org/licenses/' ]
       }
 
   );
