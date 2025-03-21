@@ -17,32 +17,30 @@ my $lexicon = dirname($incl) .'/lexicons';
 
 use_ok 'Log::Report::Template';
 
-my $templater = Log::Report::Template->new
-  ( INCLUDE_PATH => $incl
-# , DEBUG => 255
-  );
+my $templater = Log::Report::Template->new(INCLUDE_PATH => $incl,
+#	DEBUG => 255
+);
+
 isa_ok $templater, 'Log::Report::Template';
 
-my $first = $templater->addTextdomain
-  ( name => 'first'
-  , lexicon              => $lexicon
-  );
+### Define first, default function loc()
 
+my $first = $templater->addTextdomain(name => 'first', lexicon => $lexicon);
 isa_ok $first, 'Log::Report::Template::Textdomain';
 
 #dispatcher close => 'default';
 
-my $second = $templater->addTextdomain
-  ( name                 => 'second'
-  , translation_function => 'S'
-  , only_in_directory    => $incl
-  , lexicon              => $lexicon
-  );
+### Define second, function S()
+
+my $second = $templater->addTextdomain(
+	name                 => 'second',
+	translation_function => 'S',
+	only_in_directory    => $incl,
+	lexicon              => $lexicon,
+);
 
 ### Extract from the template files
 
-$templater->extract
-  (  show_stats => 1
-  );
+$templater->extract(show_stats => 1);
 
 done_testing;

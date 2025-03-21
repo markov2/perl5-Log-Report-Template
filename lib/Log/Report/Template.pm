@@ -10,7 +10,7 @@ use strict;
 
 use Log::Report 'log-report-template';
 use Log::Report::Template::Textdomain ();
-# use Log::Report::Extract::Template on demand
+# use Log::Report::Extract::Template from Log-Report-Lexicon on demand.
 
 use File::Find        qw(find);
 use Scalar::Util      qw(blessed);
@@ -21,7 +21,7 @@ use String::Print     ();
 
 =chapter NAME
 
-Log::Report::Template - template toolkit with translations
+Log::Report::Template - Template Toolkit with translations
 
 =chapter SYNOPSIS
 
@@ -220,12 +220,11 @@ sub _domains()   { values %{$_[0]->{LRT_domains} } }
 Extract message ids from the templates, and register them to the lexicon.
 Read section L</"Extracting PO-files"> how to use this method.
 
+Show statistics will be show when the Log::Report more is VERBOSE or
+DEBUG.
+
 =option  charset CHARSET
 =default charset 'UTF-8'
-
-=option  show_stats BOOLEAN
-=default show_stats <false>
-Show statistics about the processing of the template files.
 
 =option  write_tables BOOLEAN
 =default write_tables <true>
@@ -285,7 +284,7 @@ sub extract(%)
 
 		$extr->process($_) for @filenames;
 
-		$extr->showStats if $stats;
+		$extr->showStats;
 		$extr->write     if $write;
 	}
 }
