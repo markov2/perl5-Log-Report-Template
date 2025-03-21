@@ -37,7 +37,7 @@ The main addition is support for translations via the translation
 framework offered by M<Log::Report>.
 
 You add translations to a template system, by adding calls to some
-translation function (by default called 'loc()') to your template text.
+translation function (by default called C<loc()>) to your template text.
 That function will perform dark magic to collect the translation from
 translation tables, and fill in values.  For instance:
 
@@ -52,23 +52,24 @@ Please read the L</DETAILS> section before you start using this module.
 =section Constructors
 
 =c_method new %options
-Create a new translator object.  You may pass the options as HASH or
-PAIRS.  By convension, all Template Toolkit options are in capitals.
-Read M<Template::Config> about what they mean.  Extension options are
-all in lower-case.
+Create a new translator object.  You may pass the C<%options> as HASH or
+PAIRS.  By convension, all basic Template Toolkit options are in capitals.
+Read M<Template::Config> about what they mean.  Extension options provided
+by this module are all in lower-case.
 
 In a web-environment, you want to start this before your webserver starts
 forking.
 
 =option  processing_errors 'NATIVE'|'EXCEPTION'
 =default processing_errors 'NATIVE'
-The Template toolkit infrastructure handles errors carefully: C<undef> is
+The Template Toolkit infrastructure handles errors carefully: C<undef> is
 returned and you need to call M<error()> to collect it.
 
 =option  template_syntax 'UNKNOWN'|'HTML'
 =default template_syntax 'HTML'
 Linked to M<String::Print::new(encode_for)>: the output of the translation
-is HTML encoded.  Read L</"Translation into HTML">
+is HTML encoded unless the inserted value name ends on C<_html>.
+Read L</"Translation into HTML">
 
 =option  modifiers ARRAY
 =default modifiers []
@@ -79,52 +80,50 @@ Read L</"Formatter value modifiers">.
 =cut
 
 sub new
-{   my $class = shift;
-    my $self = $class->SUPER::new(@_) or panic $class->error;
-    $self;
+{	my $class = shift;
+	my $self = $class->SUPER::new(@_) or panic $class->error;
+	$self;
 }
 
 sub _init($)
-{   my ($self, $args) = @_;
+{	my ($self, $args) = @_;
 
-    # Add a filter object we can dynamically add new filters to
-    my $filters = $self->{LRT_filters} = {};
+	# Add a filter object we can dynamically add new filters to
+	my $filters = $self->{LRT_filters} = {};
+	push @{$args->{LOAD_FILTERS}}, Template::Filters->new({ FILTERS => $filters });
 
-    push @{$args->{LOAD_FILTERS}}
-      , Template::Filters->new({ FILTERS => $filters });
+	$self->SUPER::_init($args);
 
-    $self->SUPER::_init($args);
+	my $delim = $self->{LRT_delim} = $args->{DELIMITER} || ':';
+	my $incl = $args->{INCLUDE_PATH} || [];
+	$self->{LRT_path} = ref $incl eq 'ARRAY' ? $incl : [ split $delim, $incl ];
 
-    my $delim = $self->{LRT_delim} = $args->{DELIMITER} || ':';
-    my $incl = $args->{INCLUDE_PATH} || [];
-    $self->{LRT_path} = ref $incl eq 'ARRAY' ? $incl : [ split $delim, $incl ];
+	my $handle_errors = $args->{processing_errors} || 'NATIVE';
+	if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
+	elsif($handle_errors ne 'NATIVE')
+	{	error __x"illegal value '{value}' for 'processing_errors' option",
+			value => $handle_errors;
+	}
 
-    my $handle_errors = $args->{processing_errors} || 'NATIVE';
-    if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
-    elsif($handle_errors ne 'NATIVE')
-    {   error __x"illegal value '{value}' for 'processing_errors' option"
-          , value => $handle_errors;
-    }
-
-    $self->{LRT_formatter} = $self->_createFormatter($args);
-    $self->_defaultFilters;
-    $self;
+	$self->{LRT_formatter} = $self->_createFormatter($args);
+	$self->_defaultFilters;
+	$self;
 }
 
 sub _createFormatter($)
-{   my ($self, $args) = @_;
-    my $formatter = $args->{formatter};
-    return $formatter if ref $formatter eq 'CODE';
+{	my ($self, $args) = @_;
+	my $formatter = $args->{formatter};
+	return $formatter if ref $formatter eq 'CODE';
 
-    my $syntax = $args->{template_syntax} || 'HTML';
-    my $modifiers = $self->_collectModifiers($args);
+	my $syntax = $args->{template_syntax} || 'HTML';
+	my $modifiers = $self->_collectModifiers($args);
 
-    my $sp     = String::Print->new
-      ( encode_for => ($syntax eq 'HTML' ? $syntax : undef) 
-      , modifiers  => $modifiers
-      );
+	my $sp     = String::Print->new(
+		encode_for => ($syntax eq 'HTML' ? $syntax : undef),
+		modifiers  => $modifiers,
+	);
 
-    sub { $sp->sprinti(@_) };
+	sub { $sp->sprinti(@_) };
 }
 
 #---------------
@@ -157,58 +156,58 @@ The (domain) C<name> must be unique, and the C<function> not yet in use.
 =cut
 
 sub addTextdomain($%) {
-    my ($self, %args) = @_;
+	my ($self, %args) = @_;
 
-    if(my $only = $args{only_in_directory})
-    {   my $delim = $self->{LRT_delim};
-        $only     = $args{only_in_directory} = [ split $delim, $only ]
-    		if ref $only ne 'ARRAY';
+	if(my $only = $args{only_in_directory})
+	{	my $delim = $self->{LRT_delim};
+		$only     = $args{only_in_directory} = [ split $delim, $only ]
+			if ref $only ne 'ARRAY';
 
-        my @incl  = $self->_incl_path;
-        foreach my $dir (@$only)
-        {   next if grep $_ eq $dir, @incl;
-            error __x"directory {dir} not in INCLUDE_PATH, used by {option}"
-              , dir => $dir, option => 'addTextdomain(only_in_directory)';
-        }
-    }
+		my @incl  = $self->_incl_path;
+		foreach my $dir (@$only)
+		{	next if grep $_ eq $dir, @incl;
+			error __x"directory {dir} not in INCLUDE_PATH, used by {option}",
+				dir => $dir, option => 'addTextdomain(only_in_directory)';
+		}
+	}
 
-    my $name    = $args{name};
-    ! textdomain $name, 'EXISTS'
-        or error __x"textdomain '{name}' already exists", name => $name;
+	my $name    = $args{name};
+	! textdomain $name, 'EXISTS'
+		or error __x"textdomain '{name}' already exists", name => $name;
 
-    my $lexicon = delete $args{lexicon} || delete $args{lexicons}
-    	or error __x"textdomain '{name}' does not specify the lexicon directory"
-            , name => $name;
+	my $lexicon = delete $args{lexicon} || delete $args{lexicons}
+		or error __x"textdomain '{name}' does not specify the lexicon directory",
+			name => $name;
 
-    if(ref $lexicon eq 'ARRAY')
-    {   @$lexicon < 2
-        or error __x"textdomain '{name}' has more than one lexicon directory"
-            , name => $name;
+	if(ref $lexicon eq 'ARRAY')
+	{	@$lexicon < 2
+		or error __x"textdomain '{name}' has more than one lexicon directory",
+			name => $name;
 
-        $lexicon = $lexicon->[0]
-    	or error __x"textdomain '{name}' does not specify the lexicon directory"
-            , name => $name;
-    }
+		$lexicon = $lexicon->[0]
+		or error __x"textdomain '{name}' does not specify the lexicon directory",
+			name => $name;
+	}
 
-    -d $lexicon
-        or error __x"lexicon directory {dir} for textdomain '{name}' does not exist"
-           , dir => $lexicon, name => $name;
-    $args{lexicon} = $lexicon;
+	-d $lexicon
+		or error __x"lexicon directory {dir} for textdomain '{name}' does not exist",
+			dir => $lexicon, name => $name;
+	$args{lexicon} = $lexicon;
 
-    my $domain  = Log::Report::Template::Textdomain->new(%args);
-    textdomain $domain;
+	my $domain  = Log::Report::Template::Textdomain->new(%args);
+	textdomain $domain;
 
-    my $func    = $domain->function;
-    if((my $other) = grep $func eq $_->function, $self->_domains)
-    {   error __x"translation function '{func}' already in use by textdomain '{name}'"
-          , func => $func, name => $other->name;
-    }
-    $self->{LRT_domains}{$name}     = $domain;
+	my $func    = $domain->function;
+	if((my $other) = grep $func eq $_->function, $self->_domains)
+	{	error __x"translation function '{func}' already in use by textdomain '{name}'",
+			func => $func, name => $other->name;
+	}
+	$self->{LRT_domains}{$name} = $domain;
 
-    # call as function or as filter
-    $self->_stash->{$func}   = $domain->translationFunction($self->service);
-    $self->_filters->{$func} = [ $domain->translationFilter, 1 ];
-    $domain;
+	# call as function or as filter
+	$self->_stash->{$func}   = $domain->translationFunction($self->service);
+	$self->_filters->{$func} = [ $domain->translationFilter, 1 ];
+	$domain;
 }
 
 sub _incl_path() { @{shift->{LRT_path}} }
@@ -246,50 +245,49 @@ regular expression.
 =cut
 
 sub extract(%)
-{   my ($self, %args) = @_;
+{	my ($self, %args) = @_;
 
-    eval "require Log::Report::Extract::Template";
-    panic $@ if $@;
+	eval "require Log::Report::Extract::Template";
+	panic $@ if $@;
 
-    my $stats   = $args{show_stats} || 0;
-    my $charset = $args{charset}    || 'UTF-8';
-    my $write   = exists $args{write_tables} ? $args{write_tables} : 1;
+	my $stats   = $args{show_stats} || 0;
+	my $charset = $args{charset}    || 'UTF-8';
+	my $write   = exists $args{write_tables} ? $args{write_tables} : 1;
 
-    my @filenames;
-    if(my $fns  = $args{filenames} || $args{filename})
-    {   push @filenames, ref $fns eq 'ARRAY' ? @$fns : $fns;
-    }
-    else
-    {   my $match = $args{filename_match} || qr/\.tt2?$/;
-        my $filter = sub {
-            my $name = $File::Find::name;
-           push @filenames, $name if -f $name && $name =~ $match;
-        };
-    	foreach my $dir ($self->_incl_path)
-        {   trace "scan $dir for template files";
-            find { wanted => sub { $filter->($File::Find::name) }
-                 , no_chdir => 1}, $dir;
-    	}
-    }
+	my @filenames;
+	if(my $fns  = $args{filenames} || $args{filename})
+	{	push @filenames, ref $fns eq 'ARRAY' ? @$fns : $fns;
+	}
+	else
+	{	my $match = $args{filename_match} || qr/\.tt2?$/;
+		my $filter = sub {
+			my $name = $File::Find::name;
+			push @filenames, $name if -f $name && $name =~ $match;
+		};
+		foreach my $dir ($self->_incl_path)
+		{	trace "scan $dir for template files";
+			find { wanted => sub { $filter->($File::Find::name) }, no_chdir => 1}, $dir;
+		}
+	}
 
-    foreach my $domain ($self->_domains)
-    {   my $function = $domain->function;
-    	my $name     = $domain->name;
+	foreach my $domain ($self->_domains)
+	{	my $function = $domain->function;
+		my $name     = $domain->name;
 
-    	trace "extracting msgids for '$function' from domain '$name'";
+		trace "extracting msgids for '$function' from domain '$name'";
 
-        my $extr = Log::Report::Extract::Template->new
-          ( lexicon => $domain->lexicon
-          , domain  => $name
-          , pattern => "TT2-$function"
-          , charset => $charset
-          );
+		my $extr = Log::Report::Extract::Template->new(
+			lexicon => $domain->lexicon,
+			domain  => $name,
+			pattern => "TT2-$function",
+			charset => $charset,
+		);
 
-    	$extr->process($_) for @filenames;
+		$extr->process($_) for @filenames;
 
-    	$extr->showStats if $stats;
-    	$extr->write     if $write;
-    }
+		$extr->showStats if $stats;
+		$extr->write     if $write;
+	}
 }
 
 #------------
@@ -309,7 +307,7 @@ A typical example of an HTML component which needs translation is
 Both the price text as value need to be translated.  In plain perl
 (with Log::Report) you would write
 
-  __x"Price: {price £}", price => $product->price    # or
+  __x"Price: {price £}", price => $product->price   # or
   __x"Price: {p.price £}", p => $product;
 
 In HTML, there seems to be the need for two separate translations,
@@ -349,29 +347,29 @@ will be left blank.
 =cut
 
 sub _cols_factory(@)
-{   my $self = shift;
-    my $params = ref $_[-1] eq 'HASH' ? pop : undef;
-    my @blocks = @_ ? @_ : 'td';
-    if(@blocks==1 && $blocks[0] =~ /\$[1-9]/)
-    {   my $pattern = shift @blocks;
-        return sub {   # second syntax
-    	    my @cols = split /\t/, $_[0];
-    	    $pattern =~ s/\$([0-9]+)/$cols[$1-1] || ''/ge;
+{	my $self = shift;
+	my $params = ref $_[-1] eq 'HASH' ? pop : undef;
+	my @blocks = @_ ? @_ : 'td';
+	if(@blocks==1 && $blocks[0] =~ /\$[1-9]/)
+	{	my $pattern = shift @blocks;
+		return sub {    # second syntax
+			my @cols = split /\t/, $_[0];
+			$pattern =~ s/\$([0-9]+)/$cols[$1-1] || ''/ge;
 			$pattern;
-        }
-    }
+		}
+	}
 
-    sub {   # first syntax
-    	my @cols = split /\t/, $_[0];
-    	my @wrap = @blocks;
-    	my @out;
-    	while(@cols)
-        {   push @out, "<$wrap[0]>$cols[0]</$wrap[0]>";
-            shift @cols;
-            shift @wrap if @wrap > 1;
-        }
-        join '', @out;
-    }
+	sub {    # first syntax
+		my @cols = split /\t/, $_[0];
+		my @wrap = @blocks;
+		my @out;
+		while(@cols)
+		{	push @out, "<$wrap[0]>$cols[0]</$wrap[0]>";
+			shift @cols;
+			shift @wrap if @wrap > 1;
+		}
+		join '', @out;
+	}
 }
 
 =item Filter: br
@@ -385,26 +383,26 @@ Some translations will produce more than one line of text.  Add
 =cut
 
 sub _br_factory(@)
-{   my $self = shift;
-    my $params = ref $_[-1] eq 'HASH' ? pop : undef;
-    return sub {
-        my $templ = shift or return '';
-        for($templ)
-        {   s/\A[\s\n]*\n//;     # leading blank lines
-            s/\n[\s\n]*\n/\n/g;  # double blank links
-            s/\n[\s\n]*\z/\n/;   # trailing blank lines
-            s/\s*\n/<br>\n/gm;   # trailing blanks per line
-        }
-        $templ;
-    }
+{	my $self = shift;
+	my $params = ref $_[-1] eq 'HASH' ? pop : undef;
+	return sub {
+		my $templ = shift or return '';
+		for($templ)
+		{	s/\A[\s\n]*\n//;     # leading blank lines
+			s/\n[\s\n]*\n/\n/g;  # double blank links
+			s/\n[\s\n]*\z/\n/;   # trailing blank lines
+			s/\s*\n/<br>\n/gm;   # trailing blanks per line
+		}
+		$templ;
+	}
 }
 
 sub _defaultFilters()
-{   my $self   = shift;
-    my $filter = $self->_filters;
-    $filter->{cols} = [ \&_cols_factory, 1 ];
-    $filter->{br}   = [ \&_br_factory,   1 ];
-    $filter;
+{	my $self   = shift;
+	my $filter = $self->_filters;
+	$filter->{cols} = [ \&_cols_factory, 1 ];
+	$filter->{br}   = [ \&_br_factory,   1 ];
+	$filter;
 }
 
 #------------
@@ -481,15 +479,15 @@ string will take its place.
 =cut
 
 sub _collectModifiers($)
-{   my ($self, $args) = @_;
+{	my ($self, $args) = @_;
 
-    # First match will be used
-    my @modifiers = @{$args->{modifiers} || []};
+	# First match will be used
+	my @modifiers = @{$args->{modifiers} || []};
 
-    # More default extensions expected here.  String::Print already
-    # adds a bunch.
+	# More default extensions expected here.  String::Print already
+	# adds a bunch.
 
-    \@modifiers;
+	\@modifiers;
 }
 
 #------------
@@ -510,8 +508,8 @@ Process the C<$template> into C<$output>, filling in the C<%vars>.
 If the 'processing_errors' option is 'NATIVE' (default), you have to
 collect the error like this:
 
- $tt->process($template_fn, $vars, ...)
-    or die $tt->error;
+  $tt->process($template_fn, $vars, ...)
+     or die $tt->error;
 
 When the 'procesing_errors' option is set to 'EXCEPTION', the error is
 translated into a M<Log::Report::Exception>:
@@ -526,26 +524,26 @@ errors at once.
 
 =cut
 
-{ # Log::Report exports 'error', and we use that.  Our base-class
-  # 'Template' however, also has a method named error() as well.
-  # Gladly, they can easily be separated.
+{	# Log::Report exports 'error', and we use that.  Our base-class
+	# 'Template' however, also has a method named error() as well.
+	# Gladly, they can easily be separated.
 
-  # no warnings 'redefined' misbehaves, at least for perl 5.16.2
-  no warnings;  
+	# no warnings 'redefined' misbehaves, at least for perl 5.16.2
+	no warnings;
 
-  sub error()
-  {
-    return Log::Report::error(@_)
-        unless blessed $_[0] && $_[0]->isa('Template');
+	sub error()
+	{
+		return Log::Report::error(@_)
+			unless blessed $_[0] && $_[0]->isa('Template');
 
-    return shift->SUPER::error(@_)
-        unless $_[0]->{LRT_exceptions};
+		return shift->SUPER::error(@_)
+			unless $_[0]->{LRT_exceptions};
 
-    @_ or panic "inexpected call to collect errors()";
+		@_ or panic "inexpected call to collect errors()";
 
-    # convert Template errors into Log::Report errors
-    Log::Report::error($_[1]);
-  }
+		# convert Template errors into Log::Report errors
+		Log::Report::error($_[1]);
+	}
 }
 
 

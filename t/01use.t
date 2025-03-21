@@ -15,6 +15,7 @@ my @show_versions =
     Log::Report::Optional
     Log::Report::Lexicon
     String::Print
+	Template
    /;
 
 foreach my $package (@show_versions)
