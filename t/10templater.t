@@ -18,17 +18,12 @@ my $lexicon = dirname($incl) .'/lexicons';
 
 use_ok 'Log::Report::Template';
 
-my $templater = Log::Report::Template->new
-  ( INCLUDE_PATH => $incl
-  );
+my $templater = Log::Report::Template->new(INCLUDE_PATH => $incl);
 isa_ok $templater, 'Log::Report::Template';
 
 ### Construct textdomain 'first'
 
-my $first = $templater->addTextdomain
-  ( name    => 'first'
-  , lexicon => $lexicon
-  );
+my $first = $templater->addTextdomain(name => 'first', lexicon => $lexicon);
 isa_ok $first, 'Log::Report::Template::Textdomain';
 
 is $first->function, 'loc', 'default function';

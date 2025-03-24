@@ -27,7 +27,7 @@ Log::Report::Template - Template Toolkit with translations
 
   use Log::Report::Template;
   my $templater = Log::Report::Template->new(%config);
-  $templater->addTextdomain(name => "Tic", lexicon => ...);
+  $templater->addTextdomain(name => "Tic", lexicons => ...);
   $templater->process('template_file.tt', \%vars);
 
 =chapter DESCRIPTION
@@ -77,6 +77,11 @@ Add a list of modifiers to the default set.  Modifiers are part of the
 formatting process, when values get inserted in the translated string.
 Read L</"Formatter value modifiers">.
 
+=option  translate_to LANGUAGE
+=default translate_to C<undef>
+Globally set the output language of template processing.  Usually, this
+is derived from the logged-in user setting or browser setting.
+See M<translateTo()>.
 =cut
 
 sub new
@@ -107,6 +112,8 @@ sub _init($)
 
 	$self->{LRT_formatter} = $self->_createFormatter($args);
 	$self->_defaultFilters;
+
+	$self->{LRT_trTo} = $args->{translate_to};
 	$self;
 }
 
@@ -133,7 +140,25 @@ sub _createFormatter($)
 Get the C<String::Print> object which formats the messages.
 =cut
 
-sub formatter() { shift->{LRT_formatter} }
+sub formatter() { $_[0]->{LRT_formatter} }
+
+=method translateTo [$language]
+=cut
+
+sub translateTo(;$)
+{	my $self = shift;
+	my $old  = $self->{LRT_trTo};
+	@_ or return $old;
+
+	my $lang = shift;
+
+	return $lang   # language unchanged?
+		if ! defined $lang ? ! defined $old
+		 : ! defined $old  ? 0 : $lang eq $old;
+
+	$_->switchTranslationTo($lang) for $self->domains;
+	$self->{LRT_trTo} = $lang;
+}
 
 #---------------
 =section Handling text domains
@@ -150,7 +175,7 @@ The (domain) C<name> must be unique, and the C<function> not yet in use.
   my $domain = $templater->addTextdomain(
     name     => 'my-project',
     function => 'loc',   # default
-    lexicon  => $dir,    # location of translation tables
+    lexicons => $dir,    # location of translation tables
   );
 
 =cut
@@ -175,7 +200,7 @@ sub addTextdomain($%) {
 	! textdomain $name, 'EXISTS'
 		or error __x"textdomain '{name}' already exists", name => $name;
 
-	my $lexicon = delete $args{lexicon} || delete $args{lexicons}
+	my $lexicon = delete $args{lexicons} || delete $args{lexicon}
 		or error __x"textdomain '{name}' does not specify the lexicon directory",
 			name => $name;
 
@@ -194,11 +219,11 @@ sub addTextdomain($%) {
 			dir => $lexicon, name => $name;
 	$args{lexicon} = $lexicon;
 
-	my $domain  = Log::Report::Template::Textdomain->new(%args);
+	my $domain  = Log::Report::Template::Textdomain->new(%args, templater => $self);
 	textdomain $domain;
 
 	my $func    = $domain->function;
-	if((my $other) = grep $func eq $_->function, $self->_domains)
+	if((my $other) = grep $func eq $_->function, $self->domains)
 	{	error __x"translation function '{func}' already in use by textdomain '{name}'",
 			func => $func, name => $other->name;
 	}
@@ -213,8 +238,12 @@ sub addTextdomain($%) {
 sub _incl_path() { @{shift->{LRT_path}} }
 sub _filters()   { shift->{LRT_filters} }
 sub _stash()     { shift->service->context->stash }
-sub _domains()   { values %{$_[0]->{LRT_domains} } }
 
+=method domains
+Returns a LIST with all defined textdomains, unsorted.
+=cut
+
+sub domains()   { values %{$_[0]->{LRT_domains} } }
 
 =method extract %options
 Extract message ids from the templates, and register them to the lexicon.
@@ -269,7 +298,7 @@ sub extract(%)
 		}
 	}
 
-	foreach my $domain ($self->_domains)
+	foreach my $domain ($self->domains)
 	{	my $function = $domain->function;
 		my $name     = $domain->name;
 

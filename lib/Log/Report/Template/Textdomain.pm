@@ -11,6 +11,7 @@ use strict;
 use Log::Report 'log-report-template';
 
 use Log::Report::Message ();
+use Scalar::Util qw(weaken);
 
 =chapter NAME
 
@@ -44,6 +45,7 @@ See M<function()>.  It must be unique over all text-domains used.
 =option  lexicon DIRECTORY
 =default lexicon C<undef>
 
+=requires templater M<Log::Report::Template>-object
 =cut
 
 sub init($)
@@ -58,23 +60,32 @@ sub init($)
 
 	$self->{LRTT_function} = $args->{translation_function} || 'loc';
 	my $lexicon = $self->{LRTT_lexicon}  = $args->{lexicon};
+
+	$self->{LRTT_templ} = $args->{templater} or panic;
+	weaken $self->{LRTT_templ};
+
 	$self;
 }
 
 #----------------
 =section Attributes
 
+=method templater
+=cut
+
+sub templater() { $_[0]->{LRTT_templ} }
+
 =method function
 Returns the name of the function which is used for translations.
 =cut
 
-sub function() { shift->{LRTT_function} }
+sub function() { $_[0]->{LRTT_function} }
 
 =method lexicon
 Directory where the translation tables are kept.
 =cut
 
-sub lexicon() { shift->{LRTT_lexicon} }
+sub lexicon() { $_[0]->{LRTT_lexicon} }
 
 =method expectedIn $filename
 Return true when the function name which relates to this domain is
@@ -88,8 +99,21 @@ sub expectedIn($)
 	$fn =~ $only;
 }
 
+=method lang
+=cut
+
+sub lang() { $_[0]->{LRTT_lang} }
+
 #----------------
 =section Translating
+
+=method switchTranslationTo $lang
+=cut
+
+sub switchTranslationTo($)
+{	my ($self, $lang) = @_;
+	$self->{LRTT_lang} = $lang;
+}
 
 =method translationFunction
 
@@ -100,19 +124,17 @@ translation by Template Toolkit.
 
 sub translationFunction($)
 {	my ($self, $service) = @_;
-my $lang = 'NL';
 
 	# Prepare as much and fast as possible, because it gets called often!
 	sub { # called with ($msgid, \%params)
 		$_[1]->{_stash} = $service->{CONTEXT}{STASH};
-		Log::Report::Message->fromTemplateToolkit($self, @_)->toString($lang);
+		my $message = Log::Report::Message->fromTemplateToolkit($self, @_)->toString($self->lang);
 	};
 }
 
 sub translationFilter()
 {	my $self   = shift;
 	my $domain = $self->name;
-my $lang = 'NL';
 
 	# Prepare as much and fast as possible, because it gets called often!
 	# A TT filter can be either static or dynamic.  Dynamic filters need to
@@ -123,9 +145,8 @@ my $lang = 'NL';
 		my $pairs   = pop if @_ && ref $_[-1] eq 'HASH';
 		sub { # called with $msgid (template container content) only, the
 			  # parameters are caught when the factory produces this sub.
-			 $pairs->{_stash} = $context->{STASH};
-			 Log::Report::Message->fromTemplateToolkit($self, $_[0], $pairs)
-				->toString($lang);
+			$pairs->{_stash}  = $context->{STASH};
+			Log::Report::Message->fromTemplateToolkit($self, $_[0], $pairs)->toString($self->lang);
 		}
 	};
 }

@@ -13,6 +13,7 @@ version 0.90:
 	Improvements:
 	- indentation style tab.
 	- add gitignore
+	- publish domains()
 
 version 0.13: Tue Jan 23 22:26:21 CET 2018
 
