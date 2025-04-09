@@ -16,7 +16,7 @@ isa_ok $templater, 'Log::Report::Template';
 defined $lexicon or die "Cannot find lexicon";
 
 my $translator = Log::Report::Translator::POT->new(lexicons => $lexicon);
-is $translator->translate((__x"language", _domain => 'test'), 'en_EN.utf-8'), 'Brittisch English';
+is $translator->translate((__x"language", _domain => 'test'), 'en_GB.utf-8'), 'Brittisch English';
 
 my $domain = $templater->addTextdomain(name => 'test');
 $domain->configure(
@@ -34,7 +34,7 @@ is $output, "language", 'default language';
 ### translate to English
 
 $output = '';
-$templater->translateTo('en_EN.utf-8');
+$templater->translateTo('en_GB.utf-8');
 
 $templater->process(\'[% loc("language") %]', { }, \$output)
     or $templater->error;

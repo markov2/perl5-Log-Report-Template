@@ -20,7 +20,7 @@ Log::Report::Template::Textdomain - template translation with one domain
 =chapter SYNOPSIS
 
  my $templater = Log::Report::Template->new(...);
- my $domain    = $templater->newTextdomain(%options);
+ my $domain    = $templater->addTextdomain(%options);
 
 =chapter DESCRIPTION
 Manage one translation domain for M<Log::Report::Template>.
@@ -59,7 +59,7 @@ sub init($)
 	}
 
 	$self->{LRTT_function} = $args->{translation_function} || 'loc';
-	my $lexicon = $self->{LRTT_lexicon}  = $args->{lexicon};
+	$self->{LRTT_lexicon}  = $args->{lexicon};
 
 	$self->{LRTT_templ} = $args->{templater} or panic;
 	weaken $self->{LRTT_templ};

@@ -86,6 +86,8 @@ See M<translateTo()>.
 
 sub new
 {	my $class = shift;
+
+	# Template::Base gladly also calls _init() !!
 	my $self = $class->SUPER::new(@_) or panic $class->error;
 	$self;
 }
@@ -93,11 +95,14 @@ sub new
 sub _init($)
 {	my ($self, $args) = @_;
 
-	# Add a filter object we can dynamically add new filters to
-	my $filters = $self->{LRT_filters} = {};
-	push @{$args->{LOAD_FILTERS}}, Template::Filters->new({ FILTERS => $filters });
-
-	$self->SUPER::_init($args);
+	if(ref $self eq __PACKAGE__)
+	{	# Instantiated directly
+		$self->SUPER::_init($args);
+	}
+	else
+	{	# Upgrade from existing Template object
+		bless $self, __PACKAGE__;
+	}
 
 	my $delim = $self->{LRT_delim} = $args->{DELIMITER} || ':';
 	my $incl = $args->{INCLUDE_PATH} || [];
@@ -111,9 +116,8 @@ sub _init($)
 	}
 
 	$self->{LRT_formatter} = $self->_createFormatter($args);
-	$self->_defaultFilters;
-
 	$self->{LRT_trTo} = $args->{translate_to};
+	$self->_defaultFilters;
 	$self;
 }
 
@@ -175,7 +179,6 @@ The (domain) C<name> must be unique, and the C<function> not yet in use.
   my $domain = $templater->addTextdomain(
     name     => 'my-project',
     function => 'loc',   # default
-    lexicons => $dir,    # location of translation tables
   );
 
 =cut
@@ -200,43 +203,22 @@ sub addTextdomain($%) {
 	! textdomain $name, 'EXISTS'
 		or error __x"textdomain '{name}' already exists", name => $name;
 
-	my $lexicon = delete $args{lexicons} || delete $args{lexicon}
-		or error __x"textdomain '{name}' does not specify the lexicon directory",
-			name => $name;
-
-	if(ref $lexicon eq 'ARRAY')
-	{	@$lexicon < 2
-		or error __x"textdomain '{name}' has more than one lexicon directory",
-			name => $name;
-
-		$lexicon = $lexicon->[0]
-		or error __x"textdomain '{name}' does not specify the lexicon directory",
-			name => $name;
-	}
-
-	-d $lexicon
-		or error __x"lexicon directory {dir} for textdomain '{name}' does not exist",
-			dir => $lexicon, name => $name;
-	$args{lexicon} = $lexicon;
-
 	my $domain  = Log::Report::Template::Textdomain->new(%args, templater => $self);
 	textdomain $domain;
 
 	my $func    = $domain->function;
 	if((my $other) = grep $func eq $_->function, $self->domains)
-	{	error __x"translation function '{func}' already in use by textdomain '{name}'",
-			func => $func, name => $other->name;
+	{	error __x"translation function '{func}' already in use by textdomain '{name}'", func => $func, name => $other->name;
 	}
 	$self->{LRT_domains}{$name} = $domain;
 
 	# call as function or as filter
-	$self->_stash->{$func}   = $domain->translationFunction($self->service);
-	$self->_filters->{$func} = [ $domain->translationFilter, 1 ];
+	$self->_stash->{$func}  = $domain->translationFunction($self->service);
+	$self->context->define_filter($func => $domain->translationFilter, 1);
 	$domain;
 }
 
 sub _incl_path() { @{shift->{LRT_path}} }
-sub _filters()   { shift->{LRT_filters} }
 sub _stash()     { shift->service->context->stash }
 
 =method domains
@@ -407,6 +389,7 @@ Some translations will produce more than one line of text.  Add
 
   [% loc('intro-text') | br %]
   [% | br %][% intro_text %][% END %]
+  [% FILTER br %][% intro_text %][% END %]
 
 =cut
 
@@ -426,11 +409,11 @@ sub _br_factory(@)
 }
 
 sub _defaultFilters()
-{	my $self   = shift;
-	my $filter = $self->_filters;
-	$filter->{cols} = [ \&_cols_factory, 1 ];
-	$filter->{br}   = [ \&_br_factory,   1 ];
-	$filter;
+{	my $self    = shift;
+	my $context = $self->context;
+	$context->define_filter(cols => \&_cols_factory, 1);
+	$context->define_filter(br   => \&_br_factory,   1);
+	$self;
 }
 
 #------------

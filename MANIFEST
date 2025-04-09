@@ -4,6 +4,7 @@ Makefile.PL
 README.md
 lib/Log/Report/Template.pm
 lib/Log/Report/Template/Textdomain.pm
+lib/Dancer2/Template/TTLogReport.pm
 t/01use.t
 t/10templater.t
 t/11extract.t
