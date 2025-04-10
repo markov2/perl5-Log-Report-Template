@@ -19,38 +19,30 @@ use Log::Report::Template ();
 
 with 'Dancer2::Core::Role::Template';
 
-has tt => ( is => 'rw', isa => InstanceOf ['Template'] );
+has tt => ( is => 'rw', isa => InstanceOf ['Template'], builder => 1 );
 
-sub _build_engine {
+sub _build_engine { shift }
+
+sub _build_tt {
 	my $self	  = shift;
-	my $config	  = $self->config;
+	my %config	  = %{$self->config};
 	my $charset   = $self->charset;
-	my $templater = $config->{templater} || 'Log::Report::Template';
+	my $templater = delete $config{templater}  || 'Log::Report::Template';
 
-	my %tt_config = (
-		ANYCASE  => 1,
-		ABSOLUTE => 1,
-		(length $charset) ? (ENCODING => $charset) : (),
-		%$config,
-	);
-
-	my $start_tag = $config->{start_tag} || '[%';
-	$tt_config{START_TAG} = $start_tag if $start_tag ne '[%';
-
-	my $stop_tag  = $config->{stop_tag}  || $config->{end_tag} || '%]';
-	$tt_config{END_TAG}   = $stop_tag  if $stop_tag ne '%]';
+	$Template::Stash::PRIVATE = undef if delete $config{show_private_variables};
 
 	weaken(my $ttt = $self);
+	my $include_path = delete $config{include_path};
 
-	my $include_path = $config->{include_path};
-	$tt_config{INCLUDE_PATH} ||= [
-		( defined $include_path ? $include_path : () ),
-		sub { [ $ttt->views ] },
-	];
-
-	$self->tt($templater->new(%tt_config));
-	$Template::Stash::PRIVATE = undef if $config->{show_private_variables};
-	$self;
+	$templater->new(
+		ANYCASE   => 1,
+		ABSOLUTE  => 1,
+		START_TAG => delete $config{start_tag} || '\[\%',
+		END_TAG   => delete $config{end_tag}   || delete $config{stop_tag} || '\%\]',
+		INCLUDE_PATH => [ (defined $include_path ? $include_path : ()), sub { [ $ttt->views ] } ],
+		(length $charset) ? (ENCODING => $charset) : (),
+		%config,
+	);
 }
 
 sub addTextdomain(%) {
@@ -64,8 +56,12 @@ sub render($$) {
 	my $charset = $self->charset;
 	my @options = (length $charset) ? (binmode => ":encoding($charset)") : ();
 
+	if(my $lang = $tokens->{translate_to}) {
+		$self->tt->translateTo($lang);
+	}
+
 	$self->tt->process($template, $tokens, \$content, @options)
-		or $self->log_cb->(core => 'Failed to render template: ' . $self->engine->error);
+		or $self->log_cb->(core => 'Failed to render template: ' . $self->tt->error);
 
 	$content;
 }
@@ -146,7 +142,7 @@ is also available. Template::Toolkit, by default, does not render private variab
 (the ones starting with an underscore). If in your project it gets easier to disable
 this feature than changing variable names, add this option to your configuration.
 
-        show_private_variables: true
+  show_private_variables: true
 
 B<Warning:> Given the way Template::Toolkit implements this option, different Dancer2
 applications running within the same interpreter will share this option!
@@ -173,7 +169,7 @@ be able to extend this module with your own templater, however.
         TTLogReport:
           start_tag: '<%'
           end_tag:   '%>'
-          native_language: en-EN
+          native_language: en_GB
           templater: Log::Report::Template  # default
 
 =cut

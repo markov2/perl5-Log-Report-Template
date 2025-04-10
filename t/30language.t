@@ -15,13 +15,19 @@ isa_ok $templater, 'Log::Report::Template';
 (my $lexicon) = grep -d, 't/30lexicon', '30lexicon';
 defined $lexicon or die "Cannot find lexicon";
 
+### Direct use of the translation
+
 my $translator = Log::Report::Translator::POT->new(lexicons => $lexicon);
-is $translator->translate((__x"language", _domain => 'test'), 'en_GB.utf-8'), 'Brittisch English';
+isa_ok $translator, 'Log::Report::Translator::POT';
+
+### Create a registered textdomain
 
 my $domain = $templater->addTextdomain(name => 'test');
 $domain->configure(
    translator => $translator,
 );
+
+is $translator->translate((__x"language", _domain => 'test'), 'en_GB.utf-8'), 'Brittisch English', 'to GB';
 
 ### no translation
 

@@ -61,7 +61,7 @@ sub init($)
 	$self->{LRTT_function} = $args->{translation_function} || 'loc';
 	$self->{LRTT_lexicon}  = $args->{lexicon};
 
-	$self->{LRTT_templ} = $args->{templater} or panic;
+	$self->{LRTT_templ}    = $args->{templater} or panic;
 	weaken $self->{LRTT_templ};
 
 	$self;
@@ -128,7 +128,7 @@ sub translationFunction($)
 	# Prepare as much and fast as possible, because it gets called often!
 	sub { # called with ($msgid, \%params)
 		$_[1]->{_stash} = $service->{CONTEXT}{STASH};
-		my $message = Log::Report::Message->fromTemplateToolkit($self, @_)->toString($self->lang);
+		Log::Report::Message->fromTemplateToolkit($self, @_)->toString($self->lang);
 	};
 }
 
