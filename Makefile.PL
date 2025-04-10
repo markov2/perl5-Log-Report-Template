@@ -49,7 +49,7 @@ SKIP_LINKS      = Dancer2::Config
 FIRST_YEAR      = 2017
 EMAIL           = markov@cpan.org
 WEBSITE         = http://perl.overmeer.net/CPAN/
-EXTENDS         = ../../perl/LogOpt:../String-Print:../../perl/LogLex:../../perl/LogReport
+EXTENDS         = ../Log-Report-Optional:../String-Print:../Log-Report-Lexicon:../Log-Report
 
 __POSTAMBLE
 

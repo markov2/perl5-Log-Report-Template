@@ -2,7 +2,7 @@
 # with OODoc into POD and HTML manual-pages.  See README.md
 # Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
 
-#!!! This code is a mainly a rework of Dancer2::Template::TemplateToolkit,
+#!!! This code is  of
 # to use Log::Report::Template instead of (Template Toolkit's) Template module.
 # Follow issue https://github.com/PerlDancer/Dancer2/issues/1722 to see whether
 # this module can be removd.
@@ -19,9 +19,62 @@ use Log::Report::Template ();
 
 with 'Dancer2::Core::Role::Template';
 
-has tt => ( is => 'rw', isa => InstanceOf ['Template'], builder => 1 );
+=encoding UTF-8
 
-sub _build_engine { shift }
+=chapter NAME
+
+Dancer2::Template::TTLogReport - Template toolkit engine with Log::Report translations for Dancer2
+
+=chapter SYNOPSIS
+
+To use this engine, you may configure L<Dancer2> via C<config.yaml>:
+
+ template:   "TTLogReport"
+
+Or you may also change the rendering engine on a per-route basis by
+setting it manually with C<set>:
+
+  set template => 'TTLogReport';
+
+Application:
+
+  # In your daemon startup
+  my $pot    = Log::Report::Translator::POT->new(lexicon => $poddir);
+  my $domain = (engine 'template')->addTextdomain(name => $mydomain);
+  $domain->configure(translator => $pot);
+
+  # Use it:
+  get '/' => sub {
+    template index => {
+        title        => 'my webpage',
+
+        # The actual language is stored in the user session.
+        translate_to => 'nl_NL.utf-8',
+    };
+  };
+
+=chapter DESCRIPTION
+
+This template engine allows you to use L<Template>::Toolkit in L<Dancer2>,
+including the translation extensions offered by L<Log::Report::Template>.
+
+=chapter METHODS
+
+=section Constructors
+Standard M<Moo> with M<Dancer2::Core::Role::Template> extensions.
+=cut
+
+sub _build_engine { $_[0]->tt; $_[0] }
+
+=section Accessors
+
+=method tt
+Returns the M<Log::Report::Template> object which is performing the
+template processing.  This object gets instantiated based on values
+found in the Dancer2 configuration file.
+=cut
+
+has tt => ( is => 'rw', isa => InstanceOf ['Template'], builder => 1 );
 
 sub _build_tt {
 	my $self	  = shift;
@@ -45,10 +98,29 @@ sub _build_tt {
 	);
 }
 
+#-----------
+=section Action
+
+=method addTextDomain %options
+Forwards the C<%options> to M<Log::Report::Template::addTextdomain()>.
+
+=example
+  my $lexicon = $directory;  # f.i. $directory/<domain>/nl_NL.utf-8.po
+  my $tables  = Log::Report::Translator::POT->new(lexicon => $lexicon);
+  (engine 'template')->addTextdomain(name => 'mydomain')->configure(translator => $tables);
+=cut
+
 sub addTextdomain(%) {
 	my $self = shift;
 	$self->tt->addTextdomain(@_);
 }
+
+=method render $template, \%tokens
+
+Renders the template.  The first arg is a filename for the template file
+or a reference to a string that contains the template. The second arg
+is a hashref for the tokens that you wish to pass to
+L<Template::Toolkit> for rendering.
 
 sub render($$) {
 	my ($self, $template, $tokens) = @_;
@@ -66,11 +138,14 @@ sub render($$) {
 	$content;
 }
 
+#### The next is reworked from Dancer2::Template::TemplateToolkit.  No idea
+#### whether it is reasonable.
+
 # Override *_pathname methods from Dancer2::Core::Role::Template
 # Let TT2 do the concatenation of paths to template names.
 #
 # TT2 will look in a its INCLUDE_PATH for templates.
-# Typically $self->views is an absolute path, and we set ABSOLUTE=> 1 above.
+# Typically $self->views is an absolute path, and we set ABSOLUTE => 1 above.
 # In that case TT2 does NOT iterate through what is set for INCLUDE_PATH
 # However, if its not absolute, we want to allow TT2 iterate through the
 # its INCLUDE_PATH, which we set to be $self->views.
@@ -99,33 +174,15 @@ sub pathname_exists($) {
 
 __END__
 
-=pod
+=chapter DETAILS
 
-=encoding UTF-8
+=section Dancer2 Configuration
 
-=head1 NAME
+Most configuration variables are available when creating a new instance
+of a L<Template>::Toolkit object can be declared in your config.yml file.
+For example:
 
-Dancer2::Template::TTLogReport - Template toolkit engine with Log::Report extension for Dancer2
-
-=head1 SYNOPSIS
-
-To use this engine, you may configure L<Dancer2> via C<config.yaml>:
-
-    template:   "TTLogReport"
-
-Or you may also change the rendering engine on a per-route basis by
-setting it manually with C<set>:
-
-    set template => 'TTLogReport';
-
-=head1 DESCRIPTION
-
-This template engine allows you to use L<Template>::Toolkit in L<Dancer2>,
-including the translation extensions offered by L<Log::Report::Template>.
-
-Most configuration variables available when creating a new instance of a
-L<Template>::Toolkit object can be declared inside the template toolkit
-section on the engines configuration in your config.yml file.  For example:
+  template: TTLogReport
 
   engines:
     template:
@@ -147,16 +204,7 @@ this feature than changing variable names, add this option to your configuration
 B<Warning:> Given the way Template::Toolkit implements this option, different Dancer2
 applications running within the same interpreter will share this option!
 
-=head1 METHODS
-
-=head2 render($template, \%tokens)
-
-Renders the template.  The first arg is a filename for the template file
-or a reference to a string that contains the template. The second arg
-is a hashref for the tokens that you wish to pass to
-L<Template::Toolkit> for rendering.
-
-=head1 ADVANCED CUSTOMIZATION
+=section Advanced Customization
 
 Module L<Dancer2::Template::TemplateToolkit> describes how to extend the Template
 by wrapping the C<_build_engine> method.  The instantiation trick is insufficient
@@ -169,7 +217,6 @@ be able to extend this module with your own templater, however.
         TTLogReport:
           start_tag: '<%'
           end_tag:   '%>'
-          native_language: en_GB
           templater: Log::Report::Template  # default
 
 =cut
