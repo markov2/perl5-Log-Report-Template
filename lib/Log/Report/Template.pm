@@ -227,6 +227,12 @@ Returns a LIST with all defined textdomains, unsorted.
 
 sub domains()   { values %{$_[0]->{LRT_domains} } }
 
+=method domain $name
+Returns the textdomain with the specified C<$name>.
+=cut
+
+sub domain($)   { $_[0]->{LRT_domains}{$_[1]} }
+
 =method extract %options
 Extract message ids from the templates, and register them to the lexicon.
 Read section L</"Extracting PO-files"> how to use this method.
