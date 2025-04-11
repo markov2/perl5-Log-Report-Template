@@ -160,7 +160,7 @@ sub translateTo(;$)
 		if ! defined $lang ? ! defined $old
 		 : ! defined $old  ? 0 : $lang eq $old;
 
-	$_->switchTranslationTo($lang) for $self->domains;
+	$_->translateTo($lang) for $self->domains;
 	$self->{LRT_trTo} = $lang;
 }
 

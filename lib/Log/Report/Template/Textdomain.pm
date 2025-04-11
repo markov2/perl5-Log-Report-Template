@@ -107,10 +107,10 @@ sub lang() { $_[0]->{LRTT_lang} }
 #----------------
 =section Translating
 
-=method switchTranslationTo $lang
+=method translateTo $lang
 =cut
 
-sub switchTranslationTo($)
+sub translateTo($)
 {	my ($self, $lang) = @_;
 	$self->{LRTT_lang} = $lang;
 }
