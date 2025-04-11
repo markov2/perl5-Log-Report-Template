@@ -16,6 +16,7 @@ use Dancer2::Core::Types;
 use Dancer2::FileUtils qw<path>;
 use Scalar::Util qw<weaken>;
 use Log::Report::Template ();
+use Log::Report::Util     qw(parse_locale);
 
 with 'Dancer2::Core::Role::Template';
 
@@ -116,24 +117,36 @@ sub addTextdomain(%) {
 }
 
 =method render $template, \%tokens
-
 Renders the template.  The first arg is a filename for the template file
 or a reference to a string that contains the template. The second arg
 is a hashref for the tokens that you wish to pass to
 L<Template::Toolkit> for rendering.
+
+When a translation language is set, then this renderer adds the following
+variables: C<language> (like "nl"), C<language_territory> (like "nl_BE"),
+and C<locale> (like "nl_BE.utf8").
+=cut
 
 sub render($$) {
 	my ($self, $template, $tokens) = @_;
 	my $content = '';
 	my $charset = $self->charset;
 	my @options = (length $charset) ? (binmode => ":encoding($charset)") : ();
+	my $tt      = $self->tt;
 
 	if(my $lang = $tokens->{translate_to}) {
-		$self->tt->translateTo($lang);
+		$tt->translateTo($lang);
 	}
 
-	$self->tt->process($template, $tokens, \$content, @options)
-		or $self->log_cb->(core => 'Failed to render template: ' . $self->tt->error);
+	local $tokens->{locale} = my $locale = $tt->translateTo;
+	if($locale) {
+		my ($lang, $terr) = parse_locale $locale;
+		local $tokens->{language} = $lang;
+		local $tokens->{language_territory} = $lang . '_' . $terr;
+	}
+
+	$tt->process($template, $tokens, \$content, @options)
+		or $self->log_cb->(core => 'Failed to render template: ' . $tt->error);
 
 	$content;
 }
