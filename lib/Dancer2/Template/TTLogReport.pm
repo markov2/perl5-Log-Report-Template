@@ -138,12 +138,10 @@ sub render($$) {
 		$tt->translateTo($lang);
 	}
 
-	local $tokens->{locale} = my $locale = $tt->translateTo;
-	if($locale) {
-		my ($lang, $terr) = parse_locale $locale;
-		local $tokens->{language} = $lang;
-		local $tokens->{language_territory} = $lang . '_' . $terr;
-	}
+	local $tokens->{locale} = my $locale = $tt->translateTo || '';
+	my ($lang, $terr) = parse_locale $locale;
+	local $tokens->{language} = $lang // '';
+	local $tokens->{language_territory} = defined $lang && defined $terr ? $lang . '_' . $terr : '';
 
 	$tt->process($template, $tokens, \$content, @options)
 		or $self->log_cb->(core => 'Failed to render template: ' . $tt->error);
