@@ -55,5 +55,4 @@ __POSTAMBLE
 
 # for translation tables
 #linkext::
-#	- PERL5LIB="lib:$PERL5LIB" bin/xgettext-perl --mode=VERBOSE \
-#	    -p lib/Log/Report/messages lib bin
+#	- PERL5LIB="lib:$PERL5LIB" bin/xgettext-perl --mode=VERBOSE -p lib/Log/Report/messages lib
