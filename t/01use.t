@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use lib 'lib';
-use Test::More tests => 2;
+use Test::More;
 
 # The versions of the following packages are reported to help understanding
 # the environment in which the tests are run.  This is certainly not a
@@ -31,4 +31,7 @@ foreach my $package (@show_versions)
 }
 
 require_ok('Log::Report::Template');
+require_ok('Log::Report::Template::Extract');
 require_ok('Log::Report::Template::Textdomain');
+
+done_testing;

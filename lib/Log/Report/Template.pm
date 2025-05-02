@@ -10,7 +10,7 @@ use strict;
 
 use Log::Report 'log-report-template';
 use Log::Report::Template::Textdomain ();
-# use Log::Report::Extract::Template from Log-Report-Lexicon on demand.
+# use Log::Report::Template::Extract on demand.
 
 use File::Find        qw(find);
 use Scalar::Util      qw(blessed);
@@ -263,7 +263,7 @@ regular expression.
 sub extract(%)
 {	my ($self, %args) = @_;
 
-	eval "require Log::Report::Extract::Template";
+	eval "require Log::Report::Template::Extract";
 	panic $@ if $@;
 
 	my $stats   = $args{show_stats} || 0;
@@ -292,14 +292,15 @@ sub extract(%)
 
 		trace "extracting msgids for '$function' from domain '$name'";
 
-		my $extr = Log::Report::Extract::Template->new(
+		my $extr = Log::Report::Template::Extract->new(
 			lexicon => $domain->lexicon,
 			domain  => $name,
 			pattern => "TT2-$function",
 			charset => $charset,
 		);
 
-		$extr->process($_) for @filenames;
+		$extr->process($_)
+			for @filenames;
 
 		$extr->showStats;
 		$extr->write     if $write;
