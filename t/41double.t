@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Check the extraction of po-tables
+# Check the extraction of po-tables from two separate domains
 use warnings;
 use strict;
 
