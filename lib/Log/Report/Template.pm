@@ -82,6 +82,10 @@ Read L</"Formatter value modifiers">.
 Globally set the output language of template processing.  Usually, this
 is derived from the logged-in user setting or browser setting.
 See M<translateTo()>.
+
+=option  textdomain_class CLASS
+=default textdomain_class C<Log::Report::Template::Textdomain>
+Use your own extension to M<Log::Report::Template::Textdomain>.
 =cut
 
 sub new
@@ -117,6 +121,7 @@ sub _init($)
 
 	$self->{LRT_formatter} = $self->_createFormatter($args);
 	$self->{LRT_trTo} = $args->{translate_to};
+	$self->{LRT_tdc}  = $args->{textdomain_class} || 'Log::Report::Template::Textdomain';
 	$self->_defaultFilters;
 	$self;
 }
@@ -175,6 +180,9 @@ Additional facts about the options: you may specify C<only_in_directory>
 as a path. Those directories must be in the INCLUDE_PATH as well.
 The (domain) C<name> must be unique, and the C<function> not yet in use.
 
+When the code also uses this textdomain, then that configuration will
+get extended with this configuration.
+
 =example
   my $domain = $templater->addTextdomain(
     name     => 'my-project',
@@ -199,12 +207,18 @@ sub addTextdomain($%) {
 		}
 	}
 
-	my $name    = $args{name};
-	! textdomain $name, 'EXISTS'
-		or error __x"textdomain '{name}' already exists", name => $name;
+	$args{templater} ||= $self;
+	$args{lang}      ||= $self->translateTo;
 
-	my $domain  = Log::Report::Template::Textdomain->new(%args, templater => $self);
-	textdomain $domain;
+	my $name    = $args{name};
+	my $td_class= $self->{LRT_tdc};
+	my $domain;
+	if($domain  = textdomain $name, 'EXISTS')
+	{	$td_class->upgrade($domain);
+	}
+	else
+	{	$domain = textdomain($td_class->new(%args));
+	}
 
 	my $func    = $domain->function;
 	if((my $other) = grep $func eq $_->function, $self->domains)

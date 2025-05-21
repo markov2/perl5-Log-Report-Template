@@ -46,11 +46,20 @@ See M<function()>.  It must be unique over all text-domains used.
 =default lexicon C<undef>
 
 =requires templater M<Log::Report::Template>-object
+
+=option  lang LANGUAGES
+=default lang C<undef>
+[1.01] Initial language to translate to.  Usually, this language which change
+for each user connection via M<translateTo()>.
 =cut
 
 sub init($)
 {	my ($self, $args) = @_;
-	$self->SUPER::init($args);
+	$self->SUPER::init($args)->_initMe($args);
+}
+
+sub _initMe($)
+{	my ($self, $args) = @_;
 
 	if(my $only =  $args->{only_in_directory})
 	{	my @only = ref $only eq 'ARRAY' ? @$only : $only;
@@ -60,11 +69,30 @@ sub init($)
 
 	$self->{LRTT_function} = $args->{translation_function} || 'loc';
 	$self->{LRTT_lexicon}  = $args->{lexicon};
+	$self->{LRTT_lang}     = $args->{lang};
 
 	$self->{LRTT_templ}    = $args->{templater} or panic;
 	weaken $self->{LRTT_templ};
 
 	$self;
+}
+
+=c_method upgrade $domain, %options
+Upgrade a base class M<Log::Report::Domain>-object into an Template
+domain.
+
+This is a bit akward process, needed when one of the code packages
+uses the same domain as the templating system uses.  The generic domain
+configuration stays intact.
+=cut
+
+sub upgrade($%)
+{	my ($class, $domain, %args) = @_;
+
+	ref $domain eq 'Log::Report::Domain'
+		or error __x"extension to domain '{name}' already exists", name => $domain->name;
+
+	(bless $domain, $class)->_initMe(\%args);
 }
 
 #----------------
@@ -100,6 +128,8 @@ sub expectedIn($)
 }
 
 =method lang
+The language we are going to translate to.  Change this with M<translateTo()>
+for this domain, or better M<Log::Report::Template::translateTo()>.
 =cut
 
 sub lang() { $_[0]->{LRTT_lang} }
