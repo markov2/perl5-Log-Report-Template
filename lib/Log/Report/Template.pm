@@ -214,7 +214,7 @@ sub addTextdomain($%) {
 	my $td_class= $self->{LRT_tdc};
 	my $domain;
 	if($domain  = textdomain $name, 'EXISTS')
-	{	$td_class->upgrade($domain);
+	{	$td_class->upgrade($domain, %args);
 	}
 	else
 	{	$domain = textdomain($td_class->new(%args));

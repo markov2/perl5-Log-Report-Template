@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 use Test::More;
-use Log::Report; # mode => 'DEBUG';
+use Log::Report 'test';
 
 use_ok 'Log::Report::Template';
 use_ok 'Log::Report::Translator::POT';

@@ -71,7 +71,7 @@ sub _initMe($)
 	$self->{LRTT_lexicon}  = $args->{lexicon};
 	$self->{LRTT_lang}     = $args->{lang};
 
-	$self->{LRTT_templ}    = $args->{templater} or panic;
+	$self->{LRTT_templ}    = $args->{templater} or panic "Requires templater";
 	weaken $self->{LRTT_templ};
 
 	$self;
@@ -99,6 +99,7 @@ sub upgrade($%)
 =section Attributes
 
 =method templater
+The M<Log::Report::Template> object which is using this textdomain.
 =cut
 
 sub templater() { $_[0]->{LRTT_templ} }
@@ -138,6 +139,9 @@ sub lang() { $_[0]->{LRTT_lang} }
 =section Translating
 
 =method translateTo $lang
+Set the language to translate to for C<$lang>, for this domain only.  This may
+be useful when various text domains do not support the same destination languages.
+But in general, you can best use M<Log::Report::Template::translateTo()>.
 =cut
 
 sub translateTo($)
