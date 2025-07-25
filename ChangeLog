@@ -5,6 +5,12 @@ Mark Overmeer.
 
 version 1.02:
 
+https://github.com/PerlDancer/Dancer2/pull/1723
+
+	Fixes:
+	- using msgids with plural alternatives.
+	  reported by [Andy Beverley]
+
 version 1.01: Mon  2 Jun 09:51:18 CEST 2025
 
 	Fixes:

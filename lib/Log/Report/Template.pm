@@ -603,11 +603,17 @@ functions: one textdomain may use 'loc()', where an other uses 'L()'.
 =subsection Translation syntax
 
 Let say that your translation function is called 'loc', which is the
-default name.  Then, you can use that name as simple function:
+default name.  Then, you can use that name as simple function.
 
-  [% loc("msgid", key => value, ...) %]
-  [% loc('msgid', key => value, ...) %]
-  [% loc("msgid|plural", count, key => value, ...) %]
+In these examples, C<PAIRS> is a list of values to be inserted in the
+C<msgid> string. When the C<msgid> is specified with a C<plural> alternative,
+then a C<COUNTER> value is required to indicate which alternative is
+required.
+
+  [% loc("msgid", PAIRS) %]
+  [% loc('msgid', PAIRS) %]
+  [% loc("msgid|plural", COUNTER, PAIRS) %]
+  [% loc("msgid|plural", _count => COUNTER, PAIRS) %]
  
   [% INCLUDE
        title = loc('something')
@@ -616,15 +622,23 @@ default name.  Then, you can use that name as simple function:
 But also as filter.  Although filters and functions work differently
 internally in Template Toolkit, it is convenient to permit both syntaxes.
 
-  [% | loc(key => value, ...) %]msgid[% END %]
-  [% 'msgid' | loc(key => value) %]
-  [% "msgid" | loc(key => value) %]
+  [% | loc(PAIRS) %]msgid[% END %]
+  [% 'msgid' | loc(PAIRS) %]
+  [% "msgid" | loc(PAIRS) %]
+  
+  [% "msgid|plural" | loc(COUNTER, PAIRS) %]
+  [% "msgid|plural" | loc(_count => COUNTER, PAIRS) %]
+  [% FILTER loc %]msgid[% END %]
+  [% FILTER loc(COUNTER, PAIRS) %]msgid|plural[% END %]
 
 As examples
 
   [% loc("hi {n}", n => name) %]
   [% | loc(n => name) %]hi {n}[% END %]
   [% "hi {n}" | loc(n => name) %]
+  [% loc("one person|{_count} people", size) %]
+  [% | loc(size) %]one person|{_count} people[% END %]
+  [% 'one person|{_count} people' | loc(size) %]
 
 These syntaxes work exacly like translations with Log::Report for your
 Perl programs.  Compare this with:

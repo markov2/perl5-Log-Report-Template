@@ -150,19 +150,24 @@ sub translateTo($)
 }
 
 =method translationFunction
-
 This method returns a CODE which is able to handle a call for
 translation by Template Toolkit.
-
 =cut
 
 sub translationFunction($)
 {	my ($self, $service) = @_;
 
 	# Prepare as much and fast as possible, because it gets called often!
-	sub { # called with ($msgid, \%params)
-		$_[1]->{_stash} = $service->{CONTEXT}{STASH};
-		Log::Report::Message->fromTemplateToolkit($self, @_)->toString($self->lang);
+	sub { # called with ($msgid, @positionals, [\%params])
+		my $msgid  = shift;
+		my $params  = @_ && ref $_[-1] eq 'HASH' ? pop @_ : {};
+		if($msgid =~ m/\|/ && ! defined $params->{_count})
+		{	@_ or error __x"no counting positional for '{msgid}'", msgid => $msgid;
+			$params->{_count} = shift;
+		}
+		@_ and error __x"superfluous positional parameters for '{msgid}'", msgid => $msgid;
+		$params->{_stash} = $service->{CONTEXT}{STASH};
+		Log::Report::Message->fromTemplateToolkit($self, $msgid, $params)->toString($self->lang);
 	};
 }
 
@@ -176,11 +181,23 @@ sub translationFilter()
 	# sub which does the real work.
 	sub {
 		my $context = shift;
-		my $pairs   = pop if @_ && ref $_[-1] eq 'HASH';
+		my $params  = @_ && ref $_[-1] eq 'HASH' ? pop @_ : {};
+		$params->{_count} = shift if @_;
+		$params->{_error} = 'too many' if @_;   # don't know msgid yet
+
 		sub { # called with $msgid (template container content) only, the
 			  # parameters are caught when the factory produces this sub.
-			$pairs->{_stash}  = $context->{STASH};
-			Log::Report::Message->fromTemplateToolkit($self, $_[0], $pairs)->toString($self->lang);
+			my $msgid = shift;
+			! defined $params->{_count} || $msgid =~ m/\|/
+				or error __x"message does not contain counting alternatives in '{msgid}'", msgid => $msgid;
+
+			$msgid !~ m/\|/ || defined $params->{_count}
+				or error __x"no counting positional for '{msgid}'", msgid => $msgid;
+
+			! $params->{_error}
+				or error __x"superfluous positional parameters for '{msgid}'", msgid => $msgid;
+			$params->{_stash}  = $context->{STASH};
+			Log::Report::Message->fromTemplateToolkit($self, $msgid, $params)->toString($self->lang);
 		}
 	};
 }
