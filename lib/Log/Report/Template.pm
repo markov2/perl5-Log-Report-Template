@@ -28,7 +28,7 @@ Log::Report::Template - Template Toolkit with translations
   use Log::Report::Template;
   my $templater = Log::Report::Template->new(%config);
   $templater->addTextdomain(name => "Tic", lexicons => ...);
-  $templater->process('template_file.tt', \%vars);
+  $templater->process('template_file.tt', \%vars, \$output);
 
 =chapter DESCRIPTION
 
@@ -41,6 +41,7 @@ translation function (by default called C<loc()>) to your template text.
 That function will perform dark magic to collect the translation from
 translation tables, and fill in values.  For instance:
 
+  [% price = 3.14 %]
   <div>Price: [% price %]</div>          # no translation
   <div>[% loc("Price: {price}") %]</div> # translation optional
 
@@ -597,6 +598,50 @@ Your website may contain multiple separate sets of templates.  For
 instance, a standard website implementation with some local extensions.
 The only way to get that to work, is by using different translation
 functions: one textdomain may use 'loc()', where an other uses 'L()'.
+
+=subsection Integration with Template::Toolkit
+
+Instead of M<Template>, from Template::Toolkit, you use its extension
+M<Log::Report::Template>.
+
+  # during initiation of the webserver, once in your script (before fork)
+  my $lexicons   = 'some-directory-for-translation-tables';
+  my $pots = Log::Report::Translator::POT->new(lexicons => $lexicons);
+
+  my $templater  = Log::Report::Template->new(...);
+  my $domain     = $templater->addTextdomain(
+      name     => $domainname,
+      function => 'loc',
+  );
+  $domain->configure(translator => $pots);
+
+  # part of the processing per page
+  $vars{translate_to} = 'nl_NL.utf8';
+  $templater->process($template, \%vars, \$output);
+
+When you use the same domain for both templates as source code, then be
+aware that there is only one place where you can configure the domain.
+This may be in the code.  When you use a separate domain for the templates,
+then you configure as shown above.
+
+=subsection Template::Toolkit in Dancer2
+
+When you use Dancer2, you need to connect the text domain with
+
+  my $domain = (engine 'template')->addTextdomain(
+      name       => 'isaas',
+      function   => 'loc',
+  );
+
+And in file C<config.ini>:
+
+  template: "TTLogReport"
+  engines:
+    template:
+      TTLogReport:
+
+This "TTLogReport" refers to module M<Dancer2::Template::TTLogReport>, which is
+part of distribution C<Log-Report>.
 
 =section Supported syntax
 
