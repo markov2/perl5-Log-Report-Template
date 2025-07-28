@@ -110,13 +110,12 @@ sub process($@)
         or error __"need pattern to scan for, either via new() or process()";
 
     # Slurp the whole file
-    local *IN;
-    open IN, "<:encoding($charset)", $fn
+    open my $in, "<:encoding($charset)", $fn
         or fault __x"cannot read template from {fn}", fn => $fn;
 
     undef $/;
-    my $text = <IN>;
-    close IN;
+    my $text = $in->getline;
+    $in->close;
 
     my $domain  = $self->domain;
     $self->_reset($domain, $fn);
@@ -135,12 +134,11 @@ sub process($@)
 
 sub _no_escapes_in($$$$)
 {   my ($msgid, $plural, $fn, $linenr) = @_;
-    return if $msgid !~ /\&\w+\;/
-           && (defined $plural ? $plural !~ /\&\w+\;/ : 1);
+    return if $msgid !~ /\&\w+\;/ && (defined $plural ? $plural !~ /\&\w+\;/ : 1);
 	$msgid .= "|$plural" if defined $plural;
 
-    warning __x"msgid '{msgid}' contains html escapes, don't do that.  File {fn} line {linenr}"
-       , msgid => $msgid, fn => $fn, linenr => $linenr;
+    warning __x"msgid '{msgid}' contains html escapes, don't do that.  File {fn} line {linenr}",
+        msgid => $msgid, fn => $fn, linenr => $linenr;
 }
 
 sub scanTemplateToolkit($$$$)
@@ -255,29 +253,18 @@ The code needed
 
   # during initiation of the webserver, once in your script (before fork)
   my $lexicons   = 'some-directory-for-translation-tables';
-  my $translator = Log::Report::Translator::POT->new(lexicons => $lexicons);
-  my $domain     = textdomain $textdomain;
-  $domain->configure(translator => $translator);
+  my $pots = Log::Report::Translator::POT->new(lexicons => $lexicons);
 
-  # your standard template driver
-  sub handler {
-     ...
-     my $vars      = { ...all kinds of values... };
-     $vars->{loc}  = \&translate;           # <--- this is extra
+  my $templater  = Log::Report::Template->new(...);
+  my $domain     = $templater->addTextdomain(
+      name     => $domainname,
+      function => 'loc',
+  );
+  $domain->configure(translator => $pots);
 
-     my $output    = '';
-     my $templater = Template->new(...);
-     $templater->process($template_fn, $vars, \$output);
-     print $output;
-  }
-
-  # anywhere in the same file
-  sub translate {
-    my $textdomain = ...;   # your choice when running xgettext-perl
-    my $lang       = ...;   # how do you figure that out?
-    my $msg = Log::Report::Message->fromTemplateToolkit($textdomain, @_);
-    $msg->toString($lang);
-  }
+  # part of the processing per page
+  $vars{translate_to} = 'nl_NL.utf8';
+  $templater->process($template, \%vars, \$output);
 
 To generate the pod tables, run in the shell something like
 

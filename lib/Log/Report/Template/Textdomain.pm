@@ -11,7 +11,8 @@ use strict;
 use Log::Report 'log-report-template';
 
 use Log::Report::Message ();
-use Scalar::Util qw(weaken);
+
+use Scalar::Util         qw(weaken);
 
 =chapter NAME
 
@@ -156,24 +157,28 @@ translation by Template Toolkit.
 
 sub translationFunction($)
 {	my ($self, $service) = @_;
+	my $context = $service->context;
 
 	# Prepare as much and fast as possible, because it gets called often!
 	sub { # called with ($msgid, @positionals, [\%params])
 		my $msgid  = shift;
-		my $params  = @_ && ref $_[-1] eq 'HASH' ? pop @_ : {};
-		if($msgid =~ m/\|/ && ! defined $params->{_count})
+		my $params = @_ && ref $_[-1] eq 'HASH' ? pop @_ : {};
+		my $plural = $msgid =~ s/\|(.*)// ? $1 : undef;
+		if(defined $plural && ! defined $params->{_count})
 		{	@_ or error __x"no counting positional for '{msgid}'", msgid => $msgid;
 			$params->{_count} = shift;
 		}
 		@_ and error __x"superfluous positional parameters for '{msgid}'", msgid => $msgid;
-		$params->{_stash} = $service->{CONTEXT}{STASH};
-		Log::Report::Message->fromTemplateToolkit($self, $msgid, $params)->toString($self->lang);
+
+		Log::Report::Message->new(
+			_msgid => $msgid, _plural => $plural, _domain => $self,
+			%$params, _stash => $context->{STASH}, _expand => 1,
+		)->toString($self->lang);
 	};
 }
 
 sub translationFilter()
 {	my $self   = shift;
-	my $domain = $self->name;
 
 	# Prepare as much and fast as possible, because it gets called often!
 	# A TT filter can be either static or dynamic.  Dynamic filters need to
@@ -187,17 +192,21 @@ sub translationFilter()
 
 		sub { # called with $msgid (template container content) only, the
 			  # parameters are caught when the factory produces this sub.
-			my $msgid = shift;
-			! defined $params->{_count} || $msgid =~ m/\|/
+			my $msgid  = shift;
+			my $plural = $msgid =~ s/\|(.*)// ? $1 : undef;
+			defined $plural || ! defined $params->{_count}
 				or error __x"message does not contain counting alternatives in '{msgid}'", msgid => $msgid;
 
-			$msgid !~ m/\|/ || defined $params->{_count}
+			! defined $plural || defined $params->{_count}
 				or error __x"no counting positional for '{msgid}'", msgid => $msgid;
 
 			! $params->{_error}
 				or error __x"superfluous positional parameters for '{msgid}'", msgid => $msgid;
-			$params->{_stash}  = $context->{STASH};
-			Log::Report::Message->fromTemplateToolkit($self, $msgid, $params)->toString($self->lang);
+
+			Log::Report::Message->new(
+				_msgid => $msgid, _plural => $plural, _domain => $self,
+				%$params, _stash => $context->{STASH}, _expand => 1,
+			)->toString($self->lang);
 		}
 	};
 }
