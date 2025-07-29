@@ -4,7 +4,7 @@ use 5.016;
 use warnings;
 use strict;
 
-my $version = '1.02';
+my $version = '1.03';
 
 my %prereq  = (
 	'Test::More'              => 0.86,
