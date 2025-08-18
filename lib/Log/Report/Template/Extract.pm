@@ -10,6 +10,9 @@ use strict;
 
 use Log::Report 'log-report-template';
 
+use Log::Report::Template::Textdomain  ();
+sub _normalized_ws($) { Log::Report::Template::Textdomain::_normalized_ws($_[0]) }
+
 =chapter NAME
 Log::Report::Template::Extract - collect translatable strings from template files
 
@@ -35,7 +38,6 @@ Log::Report::Template::Extract - collect translatable strings from template file
  [% loc("Greetings {name},", name => client.name) %]
  [% | loc(name => client.name) %]Greetings {name}[% END %]
  [% 'Greetings {name}' | loc(name => client.name) %]
-
 
 =chapter DESCRIPTION
 
@@ -68,7 +70,7 @@ sub init($)
 {   my ($self, $args) = @_;
     $self->SUPER::init($args);
     $self->{LRTE_domain}  = $args->{domain}
-        or error "template extract requires explicit domain";
+        or error __"template extract requires explicit domain";
 
     $self->{LRTE_pattern} = $args->{pattern};
     $self;
@@ -104,14 +106,14 @@ sub process($@)
 {   my ($self, $fn, %opts) = @_;
 
     my $charset = $opts{charset} || 'utf-8';
-    info __x"processing file {fn} in {charset}", fn=> $fn, charset => $charset;
+    info __x"processing file {file} in {charset}", file => $fn, charset => $charset;
 
     my $pattern = $opts{pattern} || $self->pattern
         or error __"need pattern to scan for, either via new() or process()";
 
     # Slurp the whole file
     open my $in, "<:encoding($charset)", $fn
-        or fault __x"cannot read template from {fn}", fn => $fn;
+        or fault __x"cannot read template from {file}", file => $fn;
 
     undef $/;
     my $text = $in->getline;
@@ -137,9 +139,9 @@ sub _no_escapes_in($$$$)
     return if $msgid !~ /\&\w+\;/ && (defined $plural ? $plural !~ /\&\w+\;/ : 1);
 	$msgid .= "|$plural" if defined $plural;
 
-    warning __x"msgid '{msgid}' contains html escapes, don't do that.  File {fn} line {linenr}",
-        msgid => $msgid, fn => $fn, linenr => $linenr;
+    warning __x"msgid '{msgid}' contains html escapes, don't do that.  File {file} line {linenr}", msgid => $msgid, file => $fn, linenr => $linenr;
 }
+
 
 sub scanTemplateToolkit($$$$)
 {   my ($self, $version, $function, $fn, $textref) = @_;
@@ -166,14 +168,13 @@ sub scanTemplateToolkit($$$$)
         if($take =~ $pipe_func_block)
         {   # [% | loc(...) %] $msgid [%END%]  or [% FILTER ... %]...[% END %]
             if(@frags < 2 || $frags[1] !~ /^\s*END\s*$/)
-            {   error __x"template syntax error, no END in {fn} line {line}"
-                  , fn => $fn, line => $linenr;
+            {   error __x"template syntax error, no END in {fn} line {line}", fn => $fn, line => $linenr;
             }
             my $msgid  = $frags[0];  # next content
             my $plural = $msgid =~ s/\|(.*)// ? $1 : undef;
 			_no_escapes_in $msgid, $plural, $fn, $linenr;
 
-            $self->store($domain, $fn, $linenr, $msgid, $plural);
+            $self->store($domain, $fn, $linenr, _normalized_ws($msgid), _normalized_ws($plural));
             $msgs_found++;
 
             $linenr   += $take =~ tr/\n//;
@@ -197,8 +198,7 @@ sub scanTemplateToolkit($$$$)
         my @markup = split $func_msgid_multi, $take;
         while(@markup > 4)
         {   # quads with text, call, quote, msgid
-            $linenr   += ($markup[0] =~ tr/\n//)
-                      +  ($markup[1] =~ tr/\n//);
+            $linenr   += ($markup[0] =~ tr/\n//) + ($markup[1] =~ tr/\n//);
             my $msgid  = $markup[3];
             my $plural = $msgid =~ s/\|(.*)// ? $1 : undef;
 			_no_escapes_in $msgid, $plural, $fn, $linenr;

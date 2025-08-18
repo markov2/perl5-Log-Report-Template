@@ -177,6 +177,16 @@ sub translationFunction($)
 	};
 }
 
+# Larger HTML blocks are fragile in blanks.  We remove all superfluous blanks from the
+# msgid, which will break translation of <pre> blocks :-)
+sub _normalized_ws($)      # Code shared with ::Extract
+{	defined $_[0] or return undef;
+	$_[0] =~ s/[ \t]+/ /gr # remove blank repetition
+	      =~ s/^ //gmr     # no blanks in the beginning of the line
+          =~ s/\A\n+//r    # no leading blank lines
+          =~ s/\n+\z/\n/r; # no trailing blank lines;
+}
+
 sub translationFilter()
 {	my $self   = shift;
 
@@ -204,7 +214,7 @@ sub translationFilter()
 				or error __x"superfluous positional parameters for '{msgid}'", msgid => $msgid;
 
 			Log::Report::Message->new(
-				_msgid => $msgid, _plural => $plural, _domain => $self,
+				_msgid => _normalized_ws($msgid), _plural => _normalized_ws($plural), _domain => $self,
 				%$params, _stash => $context->{STASH}, _expand => 1,
 			)->toString($self->lang);
 		}
