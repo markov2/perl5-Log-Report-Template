@@ -484,7 +484,7 @@ Examples:
 =item Time-formatting YEAR, DATE, TIME, DT
 
 Accept various time syntaxes as value, and translate them into
-standard formats: year only, date in YYYY-MM-DD, time as 'HH::MM::SS',
+standard formats: year only, date in C<YYYY-MM-DD>, time as C<HH::MM::SS>,
 and various DateTime formats:
 
 Examples:
@@ -566,7 +566,6 @@ errors at once.
 		blessed $_[0] && $_[0]->isa('Template')
 			or return Log::Report::error(@_);
 
-			unless
 		$_[0]->{LRT_exceptions}
 			or return shift->SUPER::error(@_);
 
