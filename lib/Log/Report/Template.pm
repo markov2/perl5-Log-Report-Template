@@ -1,6 +1,7 @@
-# This code is part of distribution Log-Report-Template. Meta-POD processed
-# with OODoc into POD and HTML manual-pages.  See README.md
-# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
+#oodist: *** DO NOT USE THIS VERSION FOR PRODUCTION ***
+#oodist: This file contains OODoc-style documentation which will get stripped
+#oodist: during its release in the distribution.  You can use this file for
+#oodist: testing, however the code of this development version may be broken!
 
 package Log::Report::Template;
 use base 'Template';
@@ -12,8 +13,8 @@ use Log::Report 'log-report-template';
 use Log::Report::Template::Textdomain ();
 # use Log::Report::Template::Extract on demand.
 
-use File::Find        qw(find);
-use Scalar::Util      qw(blessed);
+use File::Find        qw/find/;
+use Scalar::Util      qw/blessed/;
 use Template::Filters ();
 use String::Print     ();
 
@@ -34,7 +35,7 @@ Log::Report::Template - Template Toolkit with translations
 
 This module extends M<Template>, which is the core of Template Toolkit.
 The main addition is support for translations via the translation
-framework offered by M<Log::Report>.
+framework offered by Log::Report.
 
 You add translations to a template system, by adding calls to some
 translation function (by default called C<loc()>) to your template text.
@@ -53,9 +54,9 @@ Please read the L</DETAILS> section before you start using this module.
 =section Constructors
 
 =c_method new %options
-Create a new translator object.  You may pass the C<%options> as HASH or
+Create a new translator object.  You may pass the %options as HASH or
 PAIRS.  By convension, all basic Template Toolkit options are in capitals.
-Read M<Template::Config> about what they mean.  Extension options provided
+Read Template::Config about what they mean.  Extension options provided
 by this module are all in lower-case.
 
 In a web-environment, you want to start this before your webserver starts
@@ -63,7 +64,7 @@ forking.
 
 =option  processing_errors 'NATIVE'|'EXCEPTION'
 =default processing_errors 'NATIVE'
-The Template Toolkit infrastructure handles errors carefully: C<undef> is
+The Template Toolkit infrastructure handles errors carefully: undef is
 returned and you need to call M<error()> to collect it.
 
 =option  template_syntax 'UNKNOWN'|'HTML'
@@ -79,14 +80,17 @@ formatting process, when values get inserted in the translated string.
 Read L</"Formatter value modifiers">.
 
 =option  translate_to LANGUAGE
-=default translate_to C<undef>
+=default translate_to undef
 Globally set the output language of template processing.  Usually, this
 is derived from the logged-in user setting or browser setting.
 See M<translateTo()>.
 
 =option  textdomain_class CLASS
 =default textdomain_class C<Log::Report::Template::Textdomain>
-Use your own extension to M<Log::Report::Template::Textdomain>.
+Use your own extension to Log::Report::Template::Textdomain.
+=cut
+
+=error illegal value '$value' for 'processing_errors' option
 =cut
 
 sub new
@@ -116,8 +120,7 @@ sub _init($)
 	my $handle_errors = $args->{processing_errors} || 'NATIVE';
 	if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
 	elsif($handle_errors ne 'NATIVE')
-	{	error __x"illegal value '{value}' for 'processing_errors' option",
-			value => $handle_errors;
+	{	error __x"illegal value '{value}' for 'processing_errors' option", value => $handle_errors;
 	}
 
 	$self->{LRT_formatter} = $self->_createFormatter($args);
@@ -143,7 +146,7 @@ sub _createFormatter($)
 	sub { $sp->sprinti(@_) };
 }
 
-#---------------
+#--------------------
 =section Attributes
 
 =method formatter
@@ -163,18 +166,17 @@ sub translateTo(;$)
 	my $lang = shift;
 
 	return $lang   # language unchanged?
-		if ! defined $lang ? ! defined $old
-		 : ! defined $old  ? 0 : $lang eq $old;
+		if ! defined $lang ? ! defined $old : ! defined $old  ? 0 : $lang eq $old;
 
 	$_->translateTo($lang) for $self->domains;
 	$self->{LRT_trTo} = $lang;
 }
 
-#---------------
+#--------------------
 =section Handling text domains
 
 =method addTextdomain %options
-Create a new M<Log::Report::Template::Textdomain> object.
+Create a new Log::Report::Template::Textdomain object.
 See its C<new()> method for the options.
 
 Additional facts about the options: you may specify C<only_in_directory>
@@ -192,6 +194,10 @@ get extended with this configuration.
 
 =cut
 
+=error directory $dir not in INCLUDE_PATH, used by $option
+=error translation function '$func' already in use by textdomain '$name'
+=cut
+
 sub addTextdomain($%) {
 	my ($self, %args) = @_;
 
@@ -203,8 +209,7 @@ sub addTextdomain($%) {
 		my @incl  = $self->_incl_path;
 		foreach my $dir (@$only)
 		{	next if grep $_ eq $dir, @incl;
-			error __x"directory {dir} not in INCLUDE_PATH, used by {option}",
-				dir => $dir, option => 'addTextdomain(only_in_directory)';
+			error __x"directory {dir} not in INCLUDE_PATH, used by {option}", dir => $dir, option => 'addTextdomain(only_in_directory)';
 		}
 	}
 
@@ -233,8 +238,8 @@ sub addTextdomain($%) {
 	$domain;
 }
 
-sub _incl_path() { @{shift->{LRT_path}} }
-sub _stash()     { shift->service->context->stash }
+sub _incl_path() { @{ $_[0]->{LRT_path}} }
+sub _stash()     { $_[0]->service->context->stash }
 
 =method domains
 Returns a LIST with all defined textdomains, unsorted.
@@ -243,7 +248,7 @@ Returns a LIST with all defined textdomains, unsorted.
 sub domains()   { values %{$_[0]->{LRT_domains} } }
 
 =method domain $name
-Returns the textdomain with the specified C<$name>.
+Returns the textdomain with the specified $name.
 =cut
 
 sub domain($)   { $_[0]->{LRT_domains}{$_[1]} }
@@ -263,9 +268,9 @@ DEBUG.
 When false, the po-files will not get updated.
 
 =option  filenames FILENAME|ARRAY
-=default filenames C<undef>
+=default filenames undef
 By default, all filenames from the INCLUDE_PATH directories which match
-the C<filename_match> are processed, but you may explicitly create a
+the P<filename_match> are processed, but you may explicitly create a
 subset by hand.
 
 =option  filename_match RegEx
@@ -322,7 +327,7 @@ sub extract(%)
 	}
 }
 
-#------------
+#--------------------
 =section Template filters
 
 Some common activities in templates are harder when translation is
@@ -343,11 +348,11 @@ Both the price text as value need to be translated.  In plain perl
   __x"Price: {p.price £}", p => $product;
 
 In HTML, there seems to be the need for two separate translations,
-may in the program code.  This module (actually M<String::Print>)
+may in the program code.  This module (actually String::Print)
 can be trained to convert money during translation, because '£'
 is a modifier.  The translation for Dutch (via a PO table) could be
 
-   "Prijs: {p.price €}"
+  "Prijs: {p.price €}"
 
 SO: we want to get both table fields in one translation.  Try this:
 
@@ -438,14 +443,12 @@ sub _defaultFilters()
 	$self;
 }
 
-#------------
-
 =back
 
 =section Formatter value modifiers
 
 Modifiers simplify the display of values.  Read the section about
-modifiers in M<String::Print>.  Here, only some examples are shown.
+modifiers in String::Print.  Here, only some examples are shown.
 
 You can achieve the same transformation with TT vmethods, or with the
 perl code which drives your website.  The advantange is that you can
@@ -460,11 +463,11 @@ actually being called to do the formatting)
 
 Examples:
 
- # pi in two decimals
- [% loc("π = {pi %.2f}", pi => 3.14157) %]
+  # pi in two decimals
+  [% loc("π = {pi %.2f}", pi => 3.14157) %]
 
- # show int, no fraction. filesize is a template variable
- [% loc("file size {size %d}", size => filesize + 0.5) %]
+  # show int, no fraction. filesize is a template variable
+  [% loc("file size {size %d}", size => filesize + 0.5) %]
 
 
 =item BYTES
@@ -488,13 +491,13 @@ Examples:
 
   # shows 'Copyright 2017'
   [% loc("Copyright {today YEAR}", today => '2017-06-26') %]
- 
+
   # shows 'Created: 2017-06-26'
   [% loc("Created: {now DATE}", now => '2017-06-26 00:24:15') %]
-  
+
   # shows 'Night: 00:24:15'
   [% loc("Night: {now TIME}", now => '2017-06-26 00:24:15') %]
-  
+
   # shows 'Mon Jun 26 00:28:50 CEST 2017'
   [% loc("Stamp: {now DT(ASC)}", now => 1498429696) %]
 
@@ -517,13 +520,9 @@ sub _collectModifiers($)
 	# First match will be used
 	my @modifiers = @{$args->{modifiers} || []};
 
-	# More default extensions expected here.  String::Print already
-	# adds a bunch.
-
+	# More default extensions expected here.  String::Print already adds a bunch.
 	\@modifiers;
 }
-
-#------------
 
 =back
 
@@ -533,11 +532,9 @@ The details of the following functions can be found in the M<Template>
 manual page.  They are included here for reference only.
 
 =method process $template, [\%vars, $output, \%options]
-
-Process the C<$template> into C<$output>, filling in the C<%vars>.
+Process the $template into $output, filling in the %vars.
 
 =method error
-
 If the 'processing_errors' option is 'NATIVE' (default), you have to
 collect the error like this:
 
@@ -545,7 +542,7 @@ collect the error like this:
      or die $tt->error;
 
 When the 'procesing_errors' option is set to 'EXCEPTION', the error is
-translated into a M<Log::Report::Exception>:
+translated into a Log::Report::Exception:
 
   use Log::Report;
   try { $tt->process($template_fn, $vars, ...) };
@@ -566,11 +563,12 @@ errors at once.
 
 	sub error()
 	{
-		return Log::Report::error(@_)
-			unless blessed $_[0] && $_[0]->isa('Template');
+		blessed $_[0] && $_[0]->isa('Template')
+			or return Log::Report::error(@_);
 
-		return shift->SUPER::error(@_)
-			unless $_[0]->{LRT_exceptions};
+			unless
+		$_[0]->{LRT_exceptions}
+			or return shift->SUPER::error(@_);
 
 		@_ or panic "inexpected call to collect errors()";
 
@@ -580,13 +578,13 @@ errors at once.
 }
 
 
-#------------
+#--------------------
 =chapter DETAILS
 
 =section Textdomains
 
 This module uses standard gettext PO-translation tables via the
-M<Log::Report::Lexicon> distribution.  An important role here is
+Log::Report::Lexicon distribution.  An important role here is
 for the 'textdomain': the name of the set of translation tables.
 
 For code, you say "use Log::Report '<textdomain>;" in each related
@@ -602,7 +600,7 @@ functions: one textdomain may use 'loc()', where an other uses 'L()'.
 =subsection Integration with Template::Toolkit
 
 Instead of M<Template>, from Template::Toolkit, you use its extension
-M<Log::Report::Template>.
+Log::Report::Template.
 
   # during initiation of the webserver, once in your script (before fork)
   my $lexicons   = 'some-directory-for-translation-tables';
@@ -640,7 +638,7 @@ And in file C<config.ini>:
     template:
       TTLogReport:
 
-This "TTLogReport" refers to module M<Dancer2::Template::TTLogReport>, which is
+This "TTLogReport" refers to module Dancer2::Template::TTLogReport, which is
 part of distribution C<Log-Report>.
 
 =section Supported syntax
@@ -659,7 +657,7 @@ required.
   [% loc('msgid', PAIRS) %]
   [% loc("msgid|plural", COUNTER, PAIRS) %]
   [% loc("msgid|plural", _count => COUNTER, PAIRS) %]
- 
+
   [% INCLUDE
        title = loc('something')
    %]
@@ -670,7 +668,7 @@ internally in Template Toolkit, it is convenient to permit both syntaxes.
   [% | loc(PAIRS) %]msgid[% END %]
   [% 'msgid' | loc(PAIRS) %]
   [% "msgid" | loc(PAIRS) %]
-  
+
   [% "msgid|plural" | loc(COUNTER, PAIRS) %]
   [% "msgid|plural" | loc(_count => COUNTER, PAIRS) %]
   [% FILTER loc %]msgid[% END %]
@@ -785,7 +783,7 @@ The alternative is via extension:
   use My::Template;
   my $templater = My::Template->new;
   $templater->process('template_file.tt', \%vars);
-  
+
   # File lib/My/Template.pm
   package My::Template;
   use parent 'Log::Report::Template';
@@ -810,20 +808,20 @@ in C<$lexicon/$textdomain-$charset.po>.  That file will be left empty:
 copy it to start a new translation.
 
 There are many ways to structure PO-files.  Which structure used, is
-detected automatically by M<Log::Report::Lexicon>.  My personal preference 
+detected automatically by Log::Report::Lexicon.  My personal preference
 is C<$lexicon/$textdomain/$language-$charset.po>.  On Unix-like systems,
 you would do:
 
   # Start a new language
   mkdir mylexicon/mydomain
-  cp mylexicon/mydomain-utf8.po mylexicon/mydomain/nl_NL-utf8.po 
-  
+  cp mylexicon/mydomain-utf8.po mylexicon/mydomain/nl_NL-utf8.po
+
   # fill the nl_NL-utf8.po file with the translation
   poedit mylexicon/mydomain/nl_NL-utf8.po
-  
+
   # add the file to your version control system
   git add mylexicon/mydomain/nl_NL-utf8.po
-  
+
 
 Now, when your program sets the locale to 'nl-NL', it should start
 translating to Dutch.  If it doesn't, it is not always easy to
@@ -837,12 +835,12 @@ get updated automatically... look for msgids which are 'fuzzy'
 (need update)
 
 You may also use the external program C<xgettext-perl>, which is
-shipped with the M<Log::Report::Lexicon> distribution.
+shipped with the Log::Report::Lexicon distribution.
 
 =subsection More performance via MO-files
 
 PO-files are quite large.  You can reduce the translation table size by
-creating a binary "MO"-file for each of them. M<Log::Report::Lexicon>
+creating a binary "MO"-file for each of them. Log::Report::Lexicon
 will prefer mo files, if it encounters them, but generation is not (yet)
 organized via Log::Report components.  Search for "msgfmt" as separate
 tool or CPAN module.

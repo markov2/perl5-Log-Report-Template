@@ -1,6 +1,7 @@
-# This code is part of distribution Log-Report-Template. Meta-POD processed
-# with OODoc into POD and HTML manual-pages.  See README.md
-# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
+#oodist: *** DO NOT USE THIS VERSION FOR PRODUCTION ***
+#oodist: This file contains OODoc-style documentation which will get stripped
+#oodist: during its release in the distribution.  You can use this file for
+#oodist: testing, however the code of this development version may be broken!
 
 package Log::Report::Template::Textdomain;
 use base 'Log::Report::Domain';
@@ -12,19 +13,20 @@ use Log::Report 'log-report-template';
 
 use Log::Report::Message ();
 
-use Scalar::Util         qw(weaken);
+use Scalar::Util         qw/weaken/;
 
+#--------------------
 =chapter NAME
 
 Log::Report::Template::Textdomain - template translation with one domain
 
 =chapter SYNOPSIS
 
- my $templater = Log::Report::Template->new(...);
- my $domain    = $templater->addTextdomain(%options);
+  my $templater = Log::Report::Template->new(...);
+  my $domain    = $templater->addTextdomain(%options);
 
 =chapter DESCRIPTION
-Manage one translation domain for M<Log::Report::Template>.
+Manage one translation domain for Log::Report::Template.
 
 =chapter METHODS
 
@@ -33,7 +35,7 @@ Manage one translation domain for M<Log::Report::Template>.
 =c_method new %options
 
 =option  only_in_directory DIRECTORY|ARRAY
-=default only_in_directory C<undef>
+=default only_in_directory undef
 The textdomain can only be used in the indicated directories: if found
 anywhere else, it's an error.  When not specified, the function is
 allowed everywhere.
@@ -44,12 +46,12 @@ The name of the function as used in the template to call for translation.
 See M<function()>.  It must be unique over all text-domains used.
 
 =option  lexicon DIRECTORY
-=default lexicon C<undef>
+=default lexicon undef
 
-=requires templater M<Log::Report::Template>-object
+=requires templater Log::Report::Template-object
 
 =option  lang LANGUAGES
-=default lang C<undef>
+=default lang undef
 [1.01] Initial language to translate to.  Usually, this language which change
 for each user connection via M<translateTo()>.
 =cut
@@ -79,12 +81,15 @@ sub _initMe($)
 }
 
 =c_method upgrade $domain, %options
-Upgrade a base class M<Log::Report::Domain>-object into an Template
+Upgrade a base class Log::Report::Domain-object into an Template
 domain.
 
 This is a bit akward process, needed when one of the code packages
 uses the same domain as the templating system uses.  The generic domain
 configuration stays intact.
+=cut
+
+=error extension to domain '$name' already exists
 =cut
 
 sub upgrade($%)
@@ -96,11 +101,11 @@ sub upgrade($%)
 	(bless $domain, $class)->_initMe(\%args);
 }
 
-#----------------
+#--------------------
 =section Attributes
 
 =method templater
-The M<Log::Report::Template> object which is using this textdomain.
+The Log::Report::Template object which is using this textdomain.
 =cut
 
 sub templater() { $_[0]->{LRTT_templ} }
@@ -136,11 +141,11 @@ for this domain, or better M<Log::Report::Template::translateTo()>.
 
 sub lang() { $_[0]->{LRTT_lang} }
 
-#----------------
+#--------------------
 =section Translating
 
 =method translateTo $lang
-Set the language to translate to for C<$lang>, for this domain only.  This may
+Set the language to translate to for $lang, for this domain only.  This may
 be useful when various text domains do not support the same destination languages.
 But in general, you can best use M<Log::Report::Template::translateTo()>.
 =cut
@@ -153,6 +158,14 @@ sub translateTo($)
 =method translationFunction
 This method returns a CODE which is able to handle a call for
 translation by Template Toolkit.
+=cut
+
+=error no counting positional for '$msgid'
+=error superfluous positional parameters for '$msgid'
+=error message does not contain counting alternatives in '$msgid'
+=error no counting positional for '$msgid'
+=error superfluous positional parameters for '$msgid'
+=warning Missing key '$key' in format '$format', in $use //template
 =cut
 
 sub translationFunction($)
@@ -182,9 +195,9 @@ sub translationFunction($)
 sub _normalized_ws($)      # Code shared with ::Extract
 {	defined $_[0] or return undef;
 	$_[0] =~ s/[ \t]+/ /gr # remove blank repetition
-	      =~ s/^ //gmr     # no blanks in the beginning of the line
-          =~ s/\A\n+//r    # no leading blank lines
-          =~ s/\n+\z/\n/r; # no trailing blank lines;
+		=~ s/^ //gmr     # no blanks in the beginning of the line
+		=~ s/\A\n+//r    # no leading blank lines
+		=~ s/\n+\z/\n/r; # no trailing blank lines;
 }
 
 sub translationFilter()
@@ -201,7 +214,7 @@ sub translationFilter()
 		$params->{_error} = 'too many' if @_;   # don't know msgid yet
 
 		sub { # called with $msgid (template container content) only, the
-			  # parameters are caught when the factory produces this sub.
+			# parameters are caught when the factory produces this sub.
 			my $msgid  = shift;
 			my $plural = $msgid =~ s/\|(.*)// ? $1 : undef;
 			defined $plural || ! defined $params->{_count}
@@ -213,8 +226,7 @@ sub translationFilter()
 			! $params->{_error}
 				or error __x"superfluous positional parameters for '{msgid}'", msgid => $msgid;
 
-			Log::Report::Message->new(
-				_msgid => _normalized_ws($msgid), _plural => _normalized_ws($plural), _domain => $self,
+			Log::Report::Message->new(_msgid => _normalized_ws($msgid), _plural => _normalized_ws($plural), _domain => $self,
 				%$params, _stash => $context->{STASH}, _expand => 1,
 			)->toString($self->lang);
 		}
@@ -234,8 +246,7 @@ sub _reportMissingKey($$)
 	}
 
 	warning __x"Missing key '{key}' in format '{format}', in {use //template}",
-		key => $key, format => $args->{_format},
-		use => $stash->{template}{name};
+		key => $key, format => $args->{_format}, use => $stash->{template}{name};
 
 	undef;
 }

@@ -11,6 +11,7 @@ version 1.03:
 	Improvements:
 	- normalize blanks for filtered text blocks.
 	  requested by [Andy Beverley]
+	- convert to OODoc 3.03
 
 version 1.02: Tue 29 Jul 09:55:57 CEST 2025
 

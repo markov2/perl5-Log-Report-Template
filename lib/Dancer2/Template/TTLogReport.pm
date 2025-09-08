@@ -1,6 +1,7 @@
-# This code is part of distribution Log-Report-Template. Meta-POD processed
-# with OODoc into POD and HTML manual-pages.  See README.md
-# Copyright Mark Overmeer.  Licensed under the same terms as Perl itself.
+#oodist: *** DO NOT USE THIS VERSION FOR PRODUCTION ***
+#oodist: This file contains OODoc-style documentation which will get stripped
+#oodist: during its release in the distribution.  You can use this file for
+#oodist: testing, however the code of this development version may be broken!
 
 #!!! This code is  of
 # to use Log::Report::Template instead of (Template Toolkit's) Template module.
@@ -16,7 +17,7 @@ use Dancer2::Core::Types;
 use Dancer2::FileUtils qw<path>;
 use Scalar::Util qw<weaken>;
 use Log::Report::Template ();
-use Log::Report::Util     qw(parse_locale);
+use Log::Report::Util     qw/parse_locale/;
 
 with 'Dancer2::Core::Role::Template';
 
@@ -30,7 +31,7 @@ Dancer2::Template::TTLogReport - Template toolkit engine with Log::Report transl
 
 To use this engine, you may configure L<Dancer2> via C<config.yaml>:
 
- template:   "TTLogReport"
+  template:   "TTLogReport"
 
 Or you may also change the rendering engine on a per-route basis by
 setting it manually with C<set>:
@@ -62,15 +63,16 @@ including the translation extensions offered by L<Log::Report::Template>.
 =chapter METHODS
 
 =section Constructors
-Standard M<Moo> with M<Dancer2::Core::Role::Template> extensions.
+Standard M<Moo> with Dancer2::Core::Role::Template extensions.
 =cut
 
 sub _build_engine { $_[0]->tt; $_[0] }
 
+#--------------------
 =section Accessors
 
 =method tt
-Returns the M<Log::Report::Template> object which is performing the
+Returns the Log::Report::Template object which is performing the
 template processing.  This object gets instantiated based on values
 found in the Dancer2 configuration file.
 =cut
@@ -99,11 +101,11 @@ sub _build_tt {
 	);
 }
 
-#-----------
+#--------------------
 =section Action
 
 =method addTextDomain %options
-Forwards the C<%options> to M<Log::Report::Template::addTextdomain()>.
+Forwards the %options to M<Log::Report::Template::addTextdomain()>.
 
 =example
   my $lexicon = $directory;  # f.i. $directory/<domain>/nl_NL.utf-8.po
@@ -222,13 +224,12 @@ by wrapping the C<_build_engine> method.  The instantiation trick is insufficien
 for a bit more complex modules, like our Log::Report translation feature.  You may
 be able to extend this module with your own templater, however.
 
-    # in config.yml
-    engines:
-      template:
-        TTLogReport:
-          start_tag: '<%'
-          end_tag:   '%>'
-          templater: Log::Report::Template  # default
+  # in config.yml
+  engines:
+    template:
+      TTLogReport:
+        start_tag: '<%'
+        end_tag:   '%>'
+        templater: Log::Report::Template  # default
 
 =cut
-
