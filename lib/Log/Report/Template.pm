@@ -43,8 +43,8 @@ That function will perform dark magic to collect the translation from
 translation tables, and fill in values.  For instance:
 
   [% price = 3.14 %]
-  <div>Price: [% price %]</div>          # no translation
-  <div>[% loc("Price: {price}") %]</div> # translation optional
+  E<lt>divE<gt>Price: [% price %]E<lt>/divE<gt>          # no translation
+  E<lt>divE<gt>[% loc("Price: {price}") %]E<lt>/divE<gt> # translation optional
 
 It's quite a lot of work to make your templates translatable.
 Please read the L</DETAILS> section before you start using this module.
@@ -73,9 +73,9 @@ Linked to M<String::Print::new(encode_for)>: the output of the translation
 is HTML encoded unless the inserted value name ends on C<_html>.
 Read L</"Translation into HTML">
 
-=option  modifiers ARRAY
+=option  modifiers \@modifiers
 =default modifiers []
-Add a list of modifiers to the default set.  Modifiers are part of the
+Add @modifiers to the default set.  Modifiers are part of the
 formatting process, when values get inserted in the translated string.
 Read L</"Formatter value modifiers">.
 
@@ -88,7 +88,6 @@ See M<translateTo()>.
 =option  textdomain_class CLASS
 =default textdomain_class C<Log::Report::Template::Textdomain>
 Use your own extension to Log::Report::Template::Textdomain.
-=cut
 
 =error illegal value '$value' for 'processing_errors' option
 =cut
@@ -267,7 +266,7 @@ DEBUG.
 =default write_tables <true>
 When false, the po-files will not get updated.
 
-=option  filenames FILENAME|ARRAY
+=option  filenames $file|\@files
 =default filenames undef
 By default, all filenames from the INCLUDE_PATH directories which match
 the P<filename_match> are processed, but you may explicitly create a
@@ -339,7 +338,7 @@ needed.  A few TT filters are provided to easy the process.
 
 A typical example of an HTML component which needs translation is
 
-  <tr><td>Price:</td><td>20 £</td></tr>
+  E<lt>trE<gt>E<lt>tdE<gt>Price:E<lt>/tdE<gt>E<lt>tdE<gt>20 £E<lt>/tdE<gt>E<lt>/trE<gt>
 
 Both the price text as value need to be translated.  In plain perl
 (with Log::Report) you would write
@@ -356,7 +355,7 @@ is a modifier.  The translation for Dutch (via a PO table) could be
 
 SO: we want to get both table fields in one translation.  Try this:
 
-  <tr>[% loc("Price:\t{p.price £}" | cols %]</tr>
+  E<lt>trE<gt>[% loc("Price:\t{p.price £}" | cols %]E<lt>/trE<gt>
 
 In the translation table, you have to place the tabs (backslash-t) as
 well.
@@ -367,13 +366,13 @@ pass 'cols' a list of container names.  The fields in the input string
 container name will be reused for all remaining columns.  By default,
 everything is wrapped in 'td' containers.
 
-  "a\tb\tc" | cols             <td>a</td><td>b</td><td>c</td>
+  "a\tb\tc" | cols             E<lt>tdE<gt>aE<lt>/tdE<gt>E<lt>tdE<gt>bE<lt>/tdE<gt>E<lt>tdE<gt>cE<lt>/tdE<gt>
   "a\tb\tc" | cols('td')       same
-  "a\tb\tc" | cols('th', 'td') <th>a</th><td>b</td><td>c</td>
-  "a"       | cols('div')      <div>a</div>
-  loc("a")  | cols('div')      <div>xxxx</div>
+  "a\tb\tc" | cols('th', 'td') E<lt>thE<gt>aE<lt>/thE<gt>E<lt>tdE<gt>bE<lt>/tdE<gt>E<lt>tdE<gt>cE<lt>/tdE<gt>
+  "a"       | cols('div')      E<lt>divE<gt>aE<lt>/divE<gt>
+  loc("a")  | cols('div')      E<lt>divE<gt>xxxxE<lt>/divE<gt>
 
-The second form has one pattern, which contains (at least one) '$1'
+The second form has one pattern, which contains (at least one) C<$1>
 replacement positions.  Missing columns for positional parameters
 will be left blank.
 
@@ -412,7 +411,7 @@ sub _cols_factory(@)
 =item Filter: br
 
 Some translations will produce more than one line of text.  Add
-'<br>' after each of them.
+'E<lt>brE<gt>' after each of them.
 
   [% loc('intro-text') | br %]
   [% | br %][% intro_text %][% END %]
@@ -594,7 +593,7 @@ templates get processed.
 Your website may contain multiple separate sets of templates.  For
 instance, a standard website implementation with some local extensions.
 The only way to get that to work, is by using different translation
-functions: one textdomain may use 'loc()', where an other uses 'L()'.
+functions: one textdomain may use 'loc()', where an other uses 'trans()'.
 
 =subsection Integration with Template::Toolkit
 
@@ -698,19 +697,18 @@ we can access.  Therefore, we can lookup "accidentally" missed parameters.
   [% loc("Hi {name}", name => name) %]  # looks silly
   [% loc("Hi {name}") %]                # uses TT stash directly
 
-
 Sometimes, computation of objects is expensive: you never know.  So, you
 may try to avoid repeated computation.  In the follow example, "soldOn"
 is collected/computed twice:
 
   [% IF product.soldOn %]
-  <td>[% loc("Sold on {product.soldOn DATE}")</td>
+  E<lt>tdE<gt>[% loc("Sold on {product.soldOn DATE}")E<lt>/tdE<gt>
   [% END %]
 
 The performance is predictable optimal with:
 
   [% sold_on = product.soldOn; IF sold_on %]
-  <td>[% loc("Sold on {sold_on DATE}")</td>
+  E<lt>tdE<gt>[% loc("Sold on {sold_on DATE}")E<lt>/tdE<gt>
   [% END %]
 
 =subsection Translation into HTML
@@ -719,26 +717,26 @@ Usually, when data is passed from the program's internal to the template,
 it should get encoded into HTML to escape some characters.  Typical TT
 code:
 
-  Title&gt; [% title | html %]
+  Title: [% title | html %]
 
 When your insert is produced by the localizer, you can do this as well
 (set C<template_syntax> to 'UNKNOWN' first)
 
-  [% loc("Title> {t}", t => title) | html %]
+  [% loc("Title: {t}", t => title) | html %]
 
 The default TT syntax is 'HTML', which will circumvent the need to
 use the html filter.  In that default case, you only say:
 
-  [% loc("Title> {t}", t => title) %]
-  [% loc("Title> {title}") %]  # short form, see previous section
+  [% loc("Title: {t}", t => title) %]
+  [% loc("Title: {title}") %]  # short form, see previous section
 
 When the title is already escaped for HTML, you can circumvent that
 by using tags which end on 'html':
 
-  [% loc("Title> {t_html}", t_html => title) %]
+  [% loc("Title: {t_html}", t_html => title) %]
 
   [% SET title_html = html(title) %]
-  [% loc("Title> {title_html}") %]
+  [% loc("Title: {title_html}") %]
 
 
 =section Extracting PO-files

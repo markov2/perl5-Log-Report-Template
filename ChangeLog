@@ -8,6 +8,9 @@ Simplify when this becomes available in the leading Dancer2 version:
 
 version 1.04:
 
+	Changes:
+	- move Dancer2 code to new Dancer2-Plugin-LogReport module.
+
 version 1.03: Mon  8 Sep 15:54:42 CEST 2025
 
 	Improvements:
