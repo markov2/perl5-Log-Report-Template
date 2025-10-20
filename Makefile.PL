@@ -56,9 +56,8 @@ my %oodist   = (
 );
 
 my %prereq  = (
-	'Test::More'              => 0.86,
 	'Scalar::Util'            => 0,
-	'Log::Report'             => 1.40,
+	'Log::Report'             => 1.42,
 	'Log::Report::Lexicon'    => 1.13,
 	'Template'                => 2.26,
 	'String::Print'           => 0.91,
@@ -66,7 +65,7 @@ my %prereq  = (
 );
 
 WriteMakefile
-	NAME      => 'Log::Report::Template',
+	NAME      => 'Log-Report-Template',
 	VERSION   => $version,
 	PREREQ_PM => \%prereq,
 

@@ -2,7 +2,6 @@ ChangeLog
 MANIFEST
 Makefile.PL
 README.md
-lib/Dancer2/Template/TTLogReport.pm
 lib/Log/Report/Template.pm
 lib/Log/Report/Template/Extract.pm
 lib/Log/Report/Template/Textdomain.pm
