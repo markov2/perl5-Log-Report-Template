@@ -55,7 +55,7 @@ my %oodist   = (
 	],
 );
 
-my %prereq  = (
+my %requires = (
 	'Scalar::Util'            => 0,
 	'Log::Report'             => 1.42,
 	'Log::Report::Lexicon'    => 1.13,
@@ -67,8 +67,6 @@ my %prereq  = (
 WriteMakefile
 	NAME      => 'Log::Report::Template',
 	VERSION   => $version,
-	PREREQ_PM => \%prereq,
-
 	AUTHOR    => 'Mark Overmeer <markov@cpan.org>',
 	ABSTRACT  => 'template toolkit with translations',
 	LICENSE   => 'perl_5',
@@ -81,20 +79,26 @@ WriteMakefile
 				url  => "$git.git",
 				web  => $git,
 			},
+			bugtracker => {
+				web  => "$git/issues",
+			},
 			homepage => $homepage,
 			license  => [ 'http//dev.perl.org/licenses/' ],
 		},
 		prereqs => {
+			runtime => {
+				requires => \%requires,
+			},
 			develop => {
 				requires => {
 					'OODoc' => '3.00',
-				}
+				},
 			},
 			test => {
 				requires => {
 					'Test::More' => 1.00,
 					'Test::Pod'  => 1.00,
-				}
+				},
 			},
 		},
 
