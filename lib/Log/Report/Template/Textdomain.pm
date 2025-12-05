@@ -9,7 +9,7 @@ use base 'Log::Report::Domain';
 use warnings;
 use strict;
 
-use Log::Report 'log-report-template';
+use Log::Report 'log-report-template', import => [ qw/__x error panic warning/ ];
 
 use Log::Report::Message ();
 

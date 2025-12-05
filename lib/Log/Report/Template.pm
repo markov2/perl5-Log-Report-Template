@@ -9,7 +9,7 @@ use base 'Template';
 use warnings;
 use strict;
 
-use Log::Report 'log-report-template';
+use Log::Report 'log-report-template', import => [ qw/__x error panic textdomain trace/ ];
 use Log::Report::Template::Textdomain ();
 # use Log::Report::Template::Extract on demand.
 
@@ -89,7 +89,7 @@ See M<translateTo()>.
 =default textdomain_class C<Log::Report::Template::Textdomain>
 Use your own extension to Log::Report::Template::Textdomain.
 
-=error illegal value '$value' for 'processing_errors' option
+=error illegal value '$value' for 'processing_errors' option.
 =cut
 
 sub new
@@ -119,7 +119,7 @@ sub _init($)
 	my $handle_errors = $args->{processing_errors} || 'NATIVE';
 	if($handle_errors eq 'EXCEPTION') { $self->{LRT_exceptions} = 1 }
 	elsif($handle_errors ne 'NATIVE')
-	{	error __x"illegal value '{value}' for 'processing_errors' option", value => $handle_errors;
+	{	error __x"illegal value '{value UNKNOWN}' for 'processing_errors' option.", value => $handle_errors;
 	}
 
 	$self->{LRT_formatter} = $self->_createFormatter($args);

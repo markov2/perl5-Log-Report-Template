@@ -1,13 +1,23 @@
 # distribution Log-Report-Template
 
-  * My extended documentation: <http://perl.overmeer.net/CPAN/>
-  * Development via GitHub: <https://github.com/markov2/perl5-Log-Report-Template>
-  * Download from CPAN: <ftp://ftp.cpan.org/pub/CPAN/authors/id/M/MA/MARKOV/>
-  * Indexed from CPAN: <https://metacpan.org/release/Log-Report-Template>
-
 This module extends "Template", which is the core of Template Toolkit.
 The main addition is support for translations via the translation
 framework offered by "Log::Report".
+
+  * My extended documentation: <http://perl.overmeer.net/CPAN/>
+  * Development via GitHub: <https://github.com/markov2/perl5-Log-Report-Template>
+  * Sponsor me: <https://markov.solutions/sponsor/index-en.html>
+  * Download from CPAN: <ftp://ftp.cpan.org/pub/CPAN/authors/id/M/MA/MARKOV/>
+  * Indexed from CPAN: <https://metacpan.org/release/Log-Report-Template>
+
+## Installing
+
+On github, you can find the processed version for each release.  But the
+better source is CPAN; to get it installed simply run:
+
+```sh
+   cpan -i Log::Report::Template
+```
 
 ## Development &rarr; Release
 
@@ -22,13 +32,6 @@ existed, sorry for the confusion)
 
 Clone from github for the "raw" version.  For instance, when you want
 to contribute a new feature.
-
-On github, you can find the processed version for each release.  But the
-better source is CPAN; to get it installed simply run:
-
-```sh
-   cpan -i Log::Report::Template
-```
 
 ## Contributing
 

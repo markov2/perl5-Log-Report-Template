@@ -9,7 +9,7 @@ use base 'Log::Report::Extract';
 use warnings;
 use strict;
 
-use Log::Report 'log-report-template';
+use Log::Report 'log-report-template', import => [ qw/__x error fault info warning/ ];
 
 use Log::Report::Template::Textdomain  ();
 sub _normalized_ws($) { Log::Report::Template::Textdomain::_normalized_ws($_[0]) }
@@ -67,14 +67,14 @@ must be explicit about the collection we are making now.
 =default pattern <undef>
 See the DETAILS section below for a detailed explenation.
 
-=error template extract requires explicit domain
+=error template extract requires explicit domain.
 =cut
 
 sub init($)
 {	my ($self, $args) = @_;
 	$self->SUPER::init($args);
 	$self->{LRTE_domain}  = $args->{domain}
-		or error __"template extract requires explicit domain";
+		or error __x"template extract requires explicit domain.";
 
 	$self->{LRTE_pattern} = $args->{pattern};
 	$self;
@@ -105,22 +105,22 @@ The character encoding used in this template file.
 =default pattern <from new(pattern)>
 Read the DETAILS section about this.
 
-=info processing file $file in $charset
-=error need pattern to scan for, either via new() or process()
+=info processing file $file in $charset.
+=error need pattern to scan for, either via new() or process().
 =fault cannot read template from $file: $!
-=error unknown pattern $pattern
-=warning msgid '$msgid' contains html escapes, don't do that.  File $file line $linenr
-=error template syntax error, no END in $fn line $line
+=error unknown pattern $pattern.
+=warning msgid '$msgid' contains html escapes, don't do that.  File $file line $linenr.
+=error template syntax error, no END in $fn line $line.
 =cut
 
 sub process($@)
 {	my ($self, $fn, %opts) = @_;
 
 	my $charset = $opts{charset} || 'utf-8';
-	info __x"processing file {file} in {charset}", file => $fn, charset => $charset;
+	info __x"processing file {file} in {charset}.", file => $fn, charset => $charset;
 
 	my $pattern = $opts{pattern} || $self->pattern
-		or error __"need pattern to scan for, either via new() or process()";
+		or error __x"need pattern to scan for, either via new() or process().";
 
 	# Slurp the whole file
 	open my $in, "<:encoding($charset)", $fn
@@ -140,7 +140,7 @@ sub process($@)
 	{	return $self->scanTemplateToolkit($1, $2, $fn, \$text);
 	}
 	else
-	{	error __x"unknown pattern {pattern}", pattern => $pattern;
+	{	error __x"unknown pattern {pattern UNKNOWN}.", pattern => $pattern;
 	}
 
 	();
@@ -151,7 +151,7 @@ sub _no_escapes_in($$$$)
 	return if $msgid !~ /\&\w+\;/ && (defined $plural ? $plural !~ /\&\w+\;/ : 1);
 	$msgid .= "|$plural" if defined $plural;
 
-	warning __x"msgid '{msgid}' contains html escapes, don't do that.  File {file} line {linenr}", msgid => $msgid, file => $fn, linenr => $linenr;
+	warning __x"msgid '{msgid EL}' contains html escapes, don't do that.  File {file} line {linenr}.", msgid => $msgid, file => $fn, linenr => $linenr;
 }
 
 
@@ -180,7 +180,7 @@ sub scanTemplateToolkit($$$$)
 		if($take =~ $pipe_func_block)
 		{	# [% | loc(...) %] $msgid [%END%]  or [% FILTER ... %]...[% END %]
 			if(@frags < 2 || $frags[1] !~ /^\s*END\s*$/)
-			{	error __x"template syntax error, no END in {fn} line {line}", fn => $fn, line => $linenr;
+			{	error __x"template syntax error, no END in {fn} line {line}.", fn => $fn, line => $linenr;
 			}
 			my $msgid  = $frags[0];  # next content
 			my $plural = $msgid =~ s/\|(.*)// ? $1 : undef;
